@@ -2,6 +2,16 @@ import torch.nn as nn
 import torch
 import re
 
+class Custom(nn.Module):
+    def __init__(self, fn):     # Let the fn be a torch function. for example: torch.sin
+        super().__init__()
+        self.fn = fn
+    def forward(self, x):
+        r = self.fn(x)
+        return r
+
+
+
 class Add(nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -37,6 +47,12 @@ for line in lines:
     new_module = nn.Softmax(dim=max(0, d))
   elif operator == '扎':
     new_module = nn.Softplus()
+  elif operator == '川':
+    new_module = m
+  elif operator == '弓':
+    new_module = Custom(torch.sin)
+  elif operator == '引':
+    new_module = Custom(torch.cos)
   else:
     raise Exception('Unrecognized operator: {}'.format(operator))
   if m:
