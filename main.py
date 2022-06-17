@@ -6,27 +6,33 @@ import pdb
 import sys
 
 class Custom(nn.Module):
-    def __init__(self, fn, no_argument = False):     # Let the fn be a torch function. for example: torch.sin
+    def __init__(self, fn, no_argument = False, name = None):     # Let the fn be a torch function. for example: torch.sin
         super().__init__()
         self.fn = fn
         self.no_argument = no_argument
+        self.name = name or self.__class__.__name__
     def forward(self, x):
         if self.no_argument:
           return self.fn()
         r = self.fn(x)
         return r
+    def _get_name(self):
+        return self.name
 
 class CustomCombine(nn.Module):
-    def __init__(self, fn, fn1, fn2):     # Let the fn be a torch function. for example: torch.sin
+    def __init__(self, fn, fn1, fn2, name = None):     # Let the fn be a torch function. for example: torch.sin
         super().__init__()
         self.fn = fn
         self.fn1 = fn1
         self.fn2 = fn2
+        self.name = name or self.__class__.__name__
     def forward(self, x):
         r1 = self.fn1(x)
         r2 = self.fn2(x)
         r = self.fn(r1, r2)
         return r
+    def _get_name(self):
+        return self.name
 
 
 class Add(nn.Module):
@@ -91,15 +97,15 @@ for line in lines:
       elif operator == '川':
         new_module = m
       elif operator == '弓':
-        new_module = Custom(torch.sin)
+        new_module = Custom(torch.sin, name = 'sin')
       elif operator == '引':
-        new_module = Custom(torch.cos)
+        new_module = Custom(torch.cos, name = 'cos')
       elif operator == '目':
         # TODO: parse 3 numerical values
-        new_module = Custom(partial(torch.linspace, start, end, steps), no_argument = True)
+        new_module = Custom(partial(torch.linspace, start, end, steps), no_argument = True, name = 'linspace')
       elif operator == '+':
           m2 = modules.pop(0)
-          m = CustomCombine(torch.add, m, m2)
+          m = CustomCombine(torch.add, m, m2, name = 'add')
       elif operator == '艹':
           m2 = modules.pop(0)
           m = torch.concat((m, m2), 0)
