@@ -1,5 +1,7 @@
-口 ... 32,1  # input_points
-目 ... 1 16 4
+34
+吕川川 ... 32,1  # input_points
+川吕川 ... 32,1  # input_points
+川川吕 ... 32,1  # input_points
 川弓引
 艹
 川森
@@ -20,10 +22,11 @@
 川森
 川厂
 艹
-川川口 ... ; 2,1 # ; input_views
+川川吕 ... ; 2,1 # ; input_views
 川森川      # feature linear
-川厂川      #
-川森川      # rgb linear
 川艹
-森川        # alpha linear
+川森       # view linear
+川厂
+川森       # rgb linear
+森川       # alpha linear
 艹

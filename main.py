@@ -52,74 +52,92 @@ lines.pop(0)
 modules = [None]
 dims = [dim]
 
-for line in lines:
+line_number = 1
+line_content = None
+
+def parseLine(line):
+  line = re.sub(r"#.*", "", line.strip())
   [operators, configs] = (line.split("...") + [''])[0:2]
   operators = operators.strip()
-  if len(operators) == 0:
-      continue
   config_list = configs.strip().split(";")
   config_list = config_list + [''] * max(len(operators) - len(config_list), 0)
   config_list = list(map(lambda s: s.strip(), config_list))
+  return [operators, config_list]
 
-  new_modules = []
-  new_dims = []
-  z = zip(operators, config_list)
-  commands = list(z)
-  # for operator, config in zip(operators, config_list):
-  num_commands = len(commands)
-  num_modules = len(modules)
-  if num_commands > num_modules:
-      for i in range(0, num_commands - num_modules):
-          modules.append(modules[-1])
-          dims.append(dims[-1])
-  for operator, config in commands:
-      # pdb.set_trace()
-      m = modules.pop(0)
-      dim = dims.pop(0)
-      value_1 = float(re.sub(r"\s", "", config) or "0")
-      if operator == '森':
-        output_dim = int(value_1)
-        new_module = nn.Linear(dim, output_dim)  # TODO: bias=
-        dim = output_dim
-      elif operator == '厂':
-        new_module = nn.ReLU()
-      elif operator == '广':
-        new_module = nn.LeakyReLU(value_1)
-      elif operator == '了':
-        new_module = nn.Sigmoid()
-      elif operator == '丁':
-        new_module = nn.Tanh()
-      elif operator == '亢':
-        d = int(value_1)
-        new_module = nn.Softmax(dim=max(0, d))
-      elif operator == '扎':
-        new_module = nn.Softplus()
-      elif operator == '川':
-        new_module = m
-      elif operator == '弓':
-        new_module = Custom(torch.sin, name = 'sin')
-      elif operator == '引':
-        new_module = Custom(torch.cos, name = 'cos')
-      elif operator == '目':
-        # TODO: parse 3 numerical values
-        new_module = Custom(partial(torch.linspace, start, end, steps), no_argument = True, name = 'linspace')
-      elif operator == '+':
-          m2 = modules.pop(0)
-          m = CustomCombine(torch.add, m, m2, name = 'add')
-      elif operator == '艹':
-          m2 = modules.pop(0)
-          m = torch.concat((m, m2), 0)
-      else:
-        raise Exception('Unrecognized operator: {}'.format(operator))
-      if m and operator != '川':
-        m = nn.Sequential(m, new_module)
-      else:
-        m = new_module
-      # pdb.set_trace()
-      new_modules.append(m)
-      new_dims.append(dim)
-  modules = new_modules
-  dims = new_dims
+try:
+    for line in lines:
+      line_number = line_number + 1
+      line_content = line = line.strip()
+      operators, config_list = parseLine(line)
+
+      new_modules = []
+      new_dims = []
+      z = zip(operators, config_list)
+      commands = list(z)
+      # for operator, config in zip(operators, config_list):
+      num_commands = len(commands)
+      num_modules = len(modules)
+      if num_commands > num_modules:
+          for i in range(0, num_commands - num_modules):
+              modules.append(modules[-1])
+              dims.append(dims[-1])
+      for operator, config in commands:
+          # pdb.set_trace()
+          m = modules.pop(0)
+          dim = dims.pop(0)
+          value_1 = float(re.sub(r"\s", "", config) or "0")
+          if operator == '森':
+            output_dim = int(value_1)
+            new_module = nn.Linear(dim, output_dim)  # TODO: bias=
+            dim = output_dim
+          elif operator == '厂':
+            new_module = nn.ReLU()
+          elif operator == '广':
+            new_module = nn.LeakyReLU(value_1)
+          elif operator == '了':
+            new_module = nn.Sigmoid()
+          elif operator == '丁':
+            new_module = nn.Tanh()
+          elif operator == '亢':
+            d = int(value_1)
+            new_module = nn.Softmax(dim=max(0, d))
+          elif operator == '扎':
+            new_module = nn.Softplus()
+          elif operator == '川':
+            new_module = m
+          elif operator == '弓':
+            new_module = Custom(torch.sin, name = 'Sin')
+          elif operator == '引':
+            new_module = Custom(torch.cos, name = 'Cos')
+          elif operator == '凶':
+            new_module = Custom(torch.abs, name = 'Abs')
+          elif operator == '吕':
+            values = list(map(lambda s: float(s.strip()), (re.sub(r"\s", "", config).split(','))))
+            assert len(values) == 2, "Expecting 2 numerical values after 吕"
+            new_module = Custom(lambda x: x[:, values[0]:values[1]], name = 'SelectColumns')
+          elif operator == '目':
+            # TODO: parse 3 numerical values
+            new_module = Custom(partial(torch.linspace, start, end, steps), no_argument = True, name = 'Linspace')
+          elif operator == '+':
+              m2 = modules.pop(0)
+              m = CustomCombine(torch.add, m, m2, name = 'Add')
+          elif operator == '艹':
+              m2 = modules.pop(0)
+              m = CustomCombine(torch.concat, m, m2, name = 'Concat')
+          else:
+            raise Exception('Unrecognized operator: {}'.format(operator))
+          if m and operator != '川':
+            m = nn.Sequential(m, new_module)
+          else:
+            m = new_module
+          # pdb.set_trace()
+          new_modules.append(m)
+          new_dims.append(dim)
+      modules = new_modules
+      dims = new_dims
+except Exception as ex:
+  print("Exception happened processing file {} at\n  line #{}: {}\n           {}".format(file_name, line_number, line_content, ex))
+  raise ex
 
 print(modules)
 print(modules[0](torch.Tensor([1,2])))
