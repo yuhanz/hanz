@@ -95,6 +95,17 @@ def interpretModule(operator, config, dim):
 def moduleListToModuleFn(l):
   return nn.Sequential(*l) if len(l) >1 else l[0]
 
+def combineModuleLists(operator, module_list, module_lists):
+  m2_list = module_lists.pop(0)
+  if operator == '+':
+    new_moduleX = CustomCombine(torch.add, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Add')
+  elif operator == '艹':
+    new_moduleX = CustomCombine(torch.concat, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Concat')
+  else:
+    return None
+  return [new_moduleX]
+
+
 file_name = sys.argv[1]
 f = open(file_name, "r")
 lines = f.readlines()
@@ -132,9 +143,7 @@ try:
           m_list = module_lists.pop(0)
           dim = dims.pop(0)
           new_module = None
-          if operator == '川':
-            pass
-          else:
+          if operator != '川':
             new_module, output_dim = interpretModule(operator, config, dim)
 
           if m_list == None:
@@ -144,15 +153,8 @@ try:
           elif new_module != None:
             m_list.append(new_module)
           else:
-            if operator == '+':
-              m2_list = module_lists.pop(0)
-              new_moduleX = CustomCombine(torch.add, nn.Sequential(*m_list), nn.Sequential(*m2_list), name = 'Add')
-              m_list = [new_moduleX]
-            elif operator == '艹':
-              m2_list = module_lists.pop(0)
-              new_moduleX = CustomCombine(torch.concat, nn.Sequential(*m_list), nn.Sequential(*m2_list), name = 'Concat')
-              m_list = [new_moduleX]
-            else:
+            m_list = combineModuleLists(operator, m_list, module_lists)
+            if m_list == None:
               raise Exception('Unrecognized operator: {}'.format(operator))
           new_module_lists.append(m_list)
           new_dims.append(dim)
