@@ -105,66 +105,64 @@ def combineModuleLists(operator, module_list, module_lists):
     return None
   return [new_moduleX]
 
+def parseHanz(lines):
+    dim = int(lines[0])
+    lines.pop(0)
+    module_lists = [[]]
+    dims = [dim]
+
+    line_number = 1
+    line_content = None
+
+    try:
+        for line in lines:
+          line_number = line_number + 1
+          line_content = line = line.strip()
+          operators, config_list = parseLine(line)
+
+          new_module_lists = []
+          new_dims = []
+          z = zip(operators, config_list)
+          commands = list(z)
+          # for operator, config in zip(operators, config_list):
+          num_commands = len(commands)
+          num_modules = len(module_lists)
+          if num_commands > num_modules:
+              for i in range(0, num_commands - num_modules):
+                  module_lists.append(module_lists[-1].copy())
+                  dims.append(dims[-1])
+          for operator, config in commands:
+              m_list = module_lists.pop(0)
+              dim = dims.pop(0)
+              new_module = None
+              if operator != '川':
+                new_module, output_dim = interpretModule(operator, config, dim)
+
+              if m_list == None:
+                m_list = [new_module]
+              elif operator == '川':
+                pass
+              elif new_module != None:
+                m_list.append(new_module)
+              else:
+                m_list = combineModuleLists(operator, m_list, module_lists)
+                if m_list == None:
+                  raise Exception('Unrecognized operator: {}'.format(operator))
+              new_module_lists.append(m_list)
+              new_dims.append(dim)
+          module_lists = new_module_lists
+          dims = new_dims
+    except Exception as ex:
+      print("Exception happened processing file {} at\n  line #{}: {}\n           {}".format(file_name, line_number, line_content, ex))
+      raise ex
+
+    return list(map(moduleListToModuleFn, module_lists))
 
 file_name = sys.argv[1]
 f = open(file_name, "r")
 lines = f.readlines()
-print(lines)
 
-dim = int(lines[0])
-lines.pop(0)
-modules = [None]
-module_lists = [[]]
-dims = [dim]
+modules = parseHanz(lines)
 
-
-line_number = 1
-line_content = None
-
-
-try:
-    for line in lines:
-      line_number = line_number + 1
-      line_content = line = line.strip()
-      operators, config_list = parseLine(line)
-
-      new_module_lists = []
-      new_dims = []
-      z = zip(operators, config_list)
-      commands = list(z)
-      # for operator, config in zip(operators, config_list):
-      num_commands = len(commands)
-      num_modules = len(module_lists)
-      if num_commands > num_modules:
-          for i in range(0, num_commands - num_modules):
-              module_lists.append(module_lists[-1].copy())
-              dims.append(dims[-1])
-      for operator, config in commands:
-          m_list = module_lists.pop(0)
-          dim = dims.pop(0)
-          new_module = None
-          if operator != '川':
-            new_module, output_dim = interpretModule(operator, config, dim)
-
-          if m_list == None:
-            m_list = [new_module]
-          elif operator == '川':
-            pass
-          elif new_module != None:
-            m_list.append(new_module)
-          else:
-            m_list = combineModuleLists(operator, m_list, module_lists)
-            if m_list == None:
-              raise Exception('Unrecognized operator: {}'.format(operator))
-          new_module_lists.append(m_list)
-          new_dims.append(dim)
-      module_lists = new_module_lists
-      dims = new_dims
-except Exception as ex:
-  print("Exception happened processing file {} at\n  line #{}: {}\n           {}".format(file_name, line_number, line_content, ex))
-  raise ex
-
-l = list(map(moduleListToModuleFn, module_lists))
-
-print(l)
-print(l[0](torch.Tensor([1,2])))
+print(modules)
+print(modules[0](torch.Tensor([1,2])))
