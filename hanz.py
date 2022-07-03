@@ -101,7 +101,7 @@ def combineModuleLists(operator, module_list, module_lists):
   if operator == '+':
     new_moduleX = CustomCombine(torch.add, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Add')
   elif operator == '艹':
-    new_moduleX = CustomCombine(torch.concat, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Concat')
+    new_moduleX = CustomCombine(lambda x1, x2: torch.cat((x1, x2), 1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Concat')
   else:
     return None
   return [new_moduleX]
