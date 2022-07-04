@@ -7,4 +7,7 @@ file_name = sys.argv[1]
 modules = hanz.parseHanz(file_name)
 
 print(modules)
-print(modules[0](torch.Tensor([1,2])))
+r = modules[0](torch.Tensor([[1,2]]))
+print(r)
+print(r.shape)
+

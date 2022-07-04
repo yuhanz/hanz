@@ -10,9 +10,10 @@ def test_example():
     assert len(modules) == 1
     assert isinstance(modules[0], nn.Module)
     assert pipelineToString(modules[0]) == "Linear,LeakyReLU,ReLU,Sigmoid,Softplus,Softmax,Sin"
-    input = torch.Tensor([1,2])
+    input = torch.Tensor([[1,2]])
     output = modules[0](input)
-    assert len(output) == 4
+    assert len(output) == 1
+    assert len(output[0]) == 4
 
 def test_multiple_module_pipeliness():
     modules = hanz.parseHanz('examples/example2a.hanz')

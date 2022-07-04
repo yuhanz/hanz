@@ -3,6 +3,7 @@ from PIL import Image
 import torch
 import hanz
 import sys
+import pdb
 
 def get_position_inputs(W, H):
     xs, ys = torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W))
@@ -27,7 +28,7 @@ image = Image.open("/Users/yzhang/Downloads/puppy2.png")
 W, H = image.size
 
 x = get_position_inputs(W, H)
-
+# pdb.set_trace()
 result = nerf_module(x)
 
 print(result.shape)
