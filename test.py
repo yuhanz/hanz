@@ -29,3 +29,14 @@ def test_combine_multiple_module_pipes():
     assert isinstance(modules[0], hanz.CustomCombine)
     assert pipelineToString(modules[0].fn1) == "Sin,Linear,ReLU"
     assert pipelineToString(modules[0].fn2) == "Linear,LeakyReLU,ReLU,Sigmoid,Softplus,Softmax,Sin"
+
+def test_pineline_with_concatenation():
+    modules = hanz.parseHanz('examples/example-nerf-part1.hanz')
+    assert len(modules) == 1
+    m = modules[0]
+    assert isinstance(m, hanz.CustomCombine)
+    x = torch.rand(3, 12)
+    result = m(x)
+    num_tests, dim  = result.shape
+    assert num_tests == 3
+    assert dim == 562

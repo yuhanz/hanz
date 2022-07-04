@@ -44,6 +44,8 @@ class Add(nn.Module):
 
 def parseLine(line):
   line = re.sub(r"#.*", "", line.strip())
+  if(line.strip() == ''):
+      return [[], []]
   [operators, configs] = (line.split("...") + [''])[0:2]
   operators = operators.strip()
   config_list = configs.strip().split(";")
@@ -129,6 +131,8 @@ def parseHanz(file_name):
           line_number = line_number + 1
           line_content = line = line.strip()
           operators, config_list = parseLine(line)
+          if(len(operators) == 0):
+            continue
           # if line_number == 3:
           #     pdb.set_trace()
 

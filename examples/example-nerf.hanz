@@ -1,33 +1,33 @@
-34
+12
 吕川 ... 0,2  # input_points
 川吕 ... ; 2,12 # input_points
 川川川
 川弓引
 艹川
 艹
-川森
+川森 ... ; 360
 川厂
-川森
+川森 ... ; 360
 川厂
-川森
+川森 ... ; 360
 川厂
-川森
-川厂
-艹
-川森
-川厂
-川森
-川厂
-川森
-川厂
-川森
+川森 ... ; 360
 川厂
 艹
-川川吕 ... ; 2,1 # ; input_views
-川森川      # feature linear
-川艹
-川森       # view linear
+川森 ... ; 180
 川厂
-川森       # rgb linear
-森川       # alpha linear
+川森 ... ; 180
+川厂
+川森 ... ; 180
+川厂
+川森 ... ; 180
+川厂
 艹
+#川川吕 ... ; ; 2,1  # input_views
+#川森川      # feature linear
+#川艹
+#川森       # view linear
+#川厂
+#川森       # rgb linear
+#森川       # alpha linear
+#艹

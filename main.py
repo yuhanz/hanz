@@ -18,7 +18,7 @@ def get_position_inputs(W, H):
     return x
 
 # file_name = sys.argv[1]
-file_name = "examples/example-nerf-part1.hanz"
+file_name = "examples/example-nerf.hanz"
 modules = hanz.parseHanz(file_name)
 
 nerf_module = modules[0]
