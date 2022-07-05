@@ -38,9 +38,10 @@ model.to(device)
 learning_rate = 0.0002
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 
-target_image = torch.Tensor(np.asarray(image).flatten())
+target_image = torch.Tensor(np.asarray(image).flatten()).to(device)
 
 num_training_rounds = 100
+x = x.to(device)
 for i in range(1,num_training_rounds):
 # pdb.set_trace()
     result_image = model(x)
