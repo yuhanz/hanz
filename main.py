@@ -1,4 +1,5 @@
 from PIL import Image
+import matplotlib.pyplot as plt
 
 import torch
 import hanz
@@ -33,14 +34,32 @@ x = get_position_inputs(W, H)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model.to(device)
 
-result_image = model(x)
+
 learning_rate = 0.0002
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 
 target_image = torch.Tensor(np.asarray(image).flatten())
+
+num_training_rounds = 100
+for i in range(1,num_training_rounds):
 # pdb.set_trace()
-loss = torch.nn.L1Loss()(result_image.flatten(), target_image )
-print("loss", loss)
-optimizer.zero_grad()
-loss.backward()
-optimizer.step()
+    result_image = model(x)
+    loss = torch.nn.L1Loss()(result_image.flatten(), target_image )
+    print("loss", loss)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+def convertResultToImage(result_array, width, height):
+    generated_img = result_array.cpu().detach().numpy().astype('uint8')
+    generated_img = np.reshape(generated_img, (width, height, 3))
+    return generated_img
+
+def showImage(img):
+    fig,ax = plt.subplots()
+    ax.imshow(img)
+    plt.show()
+
+
+img = convertResultToImage(result_image, W, H)
+showImage(img)
