@@ -117,7 +117,9 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
 def parseHanz(file_name):
     f = open(file_name, "r")
     lines = f.readlines()
+    return parseHanzLines(lines, file_name)
 
+def parseHanzLines(lines, file_name = None):
     dim = int(lines[0])
     lines.pop(0)
     module_lists = [[]]

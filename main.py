@@ -38,7 +38,7 @@ def getViewDirs(camera_pos, screen_center, width, height):
     return view_dirs
 
 # file_name = sys.argv[1]
-file_name = "examples/example-nerf.hanz"
+file_name = "./examples/example-nerf-with-view-dir.hanz"
 modules = hanz.parseHanz(file_name)
 
 model = modules[0]
@@ -81,7 +81,7 @@ for i in range(1,num_training_rounds):
 # pdb.set_trace()
     result_image = model(inputs)
     loss = torch.nn.L1Loss()(result_image.flatten(), target_image )
-    print("loss", loss)
+    print("{}/{} loss".format(i, num_training_rounds), loss)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
