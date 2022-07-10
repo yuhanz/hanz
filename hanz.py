@@ -49,6 +49,8 @@ def parseLine(line):
   [operators, configs] = (line.split("...") + [''])[0:2]
   operators = operators.strip()
   config_list = configs.strip().split(";")
+  if len(config_list) == 1 and len(list(filter(lambda o: o != '川', operators))) == 1:
+      return [operators, list(map(lambda o: config_list[0] if o != '川' else None, operators))]
   config_list = config_list + [''] * max(len(operators) - len(config_list), 0)
   config_list = list(map(lambda s: s.strip(), config_list))
   return [operators, config_list]

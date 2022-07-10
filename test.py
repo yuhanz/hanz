@@ -40,3 +40,13 @@ def test_pineline_with_concatenation():
     num_tests, dim  = result.shape
     assert num_tests == 3
     assert dim == 562
+
+def test_pineline_with_one_working_operator_in_row():
+    modules = hanz.parseHanz('examples/example-nerf-with-view-dir.hanz')
+    assert len(modules) == 1
+    m = modules[0]
+    x = torch.rand(1, 18)
+    result = m(x)
+    num_tests, dim  = result.shape
+    assert num_tests == 1
+    assert dim == 3
