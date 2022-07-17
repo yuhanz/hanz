@@ -6,14 +6,19 @@ import hanz
 import sys
 import pdb
 import numpy as np
+import math
+import time
 
 def get_position_inputs(W, H):
     xs, ys = torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W))
     inputs = torch.stack((torch.flatten(xs), torch.flatten(ys)))
     inputs = torch.transpose(inputs, 0, 1)
-    max_freq = 20
+    max_freq = 10
     N_freqs = 10
-    frequencies = torch.linspace(2.**0., 2.**max_freq, steps=N_freqs)
+    # frequencies = torch.linspace(2.**0., 2.**max_freq, steps=N_freqs)
+    frequencies = np.array(list(map(lambda x: 1- 0.65**x, np.arange(0,N_freqs)))) * 2.**max_freq
+    frequencies[0] = 1.0
+    frequencies = torch.Tensor(frequencies)
     frequencies = torch.stack((frequencies, frequencies))
     frequency_x = torch.matmul(inputs, frequencies)
     x = torch.cat((inputs, frequency_x), 1)
@@ -47,21 +52,28 @@ image = Image.open("/Users/yzhang/Downloads/puppy2.png")
 image1 = Image.open("/Users/yzhang/Downloads/puppy1.png")
 W, H = image.size
 
-x = get_position_inputs(W, H)
-# pdb.set_trace()
+def rotateCameraAroundOrigin(angle):
+  camera_distance = -360
+  screen_distance = -180
+  cosA = np.cos(angle)
+  sinA = np.sin(angle)
+  camera_pos = np.array([sinA, 0, cosA]) * camera_distance
+  screen_center = np.array([sinA, 0, cosA]) * screen_distance
+  return [camera_pos, screen_center]
 
-camera_pos_0 = np.array([0, 0, -360])
-screen_center_0 = np.array([0, 0, -180])
-camera_pos_1 = np.array([255, 0, -255])
-screen_center_1 = np.array([127.5, 0, -127.5])
 
-ray_origins_0 = torch.Tensor([camera_pos_0] * (W * H))
-ray_origins_1 = torch.Tensor([camera_pos_1] * (W * H))
-ray_dirs_0 = torch.Tensor(getViewDirs(camera_pos_0, screen_center_0, W, H))
-ray_dirs_1 = torch.Tensor(getViewDirs(camera_pos_1, screen_center_1, W, H))
+def getInputFromCameraPosition(angle, screen_width, screen_height):
+  W = screen_width
+  H = screen_height
+  get_position_inputs(W, H)
+  camera_pos, screen_center = rotateCameraAroundOrigin(angle)
+  ray_dirs = torch.Tensor(getViewDirs(camera_pos, screen_center, W, H))
+  ray_origins = torch.Tensor([camera_pos] * (W * H))
+  x = get_position_inputs(W, H)
+  return torch.cat((x, ray_origins, ray_dirs), 1)
 
-input0 = torch.cat((x, ray_origins_0, ray_dirs_0), 1)
-input1 = torch.cat((x, ray_origins_1, ray_dirs_1), 1)
+input0 = getInputFromCameraPosition(0, W, H)  # view angle for image
+input1 = getInputFromCameraPosition(-math.pi/4, W, H) # view angle for image 1
 inputs = torch.cat((input0, input1), 0)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -75,6 +87,42 @@ target_image = torch.Tensor(np.asarray(image).flatten())
 target_image1 = torch.Tensor(np.asarray(image1).flatten())
 target_image = torch.cat((target_image, target_image1), 0).to(device)
 
+# Decrease learning rate if velocity is slow and std is high
+# Increase learning rate if velocity is slow and std is low
+# Stop if learning negatively
+class LossTracker:
+    lossMean = None
+    lossStd = None
+    lossSamples = []
+    lossSamplesToCollect = 20
+    lossVelocity = 0
+    start_timestamp = None
+    def push(self, loss):
+        self.lossSamples.append(loss.item())
+        if(self.lossMean == None):
+            self.lossMean = self.lossSamples[0]
+            self.start_timestamp = time.time()
+        if len(self.lossSamples) >= self.lossSamplesToCollect:
+            lossMean2 = np.mean(self.lossSamples)
+            lossStd2 = np.std(self.lossSamples)
+            self.lossVelocity = lossMean2 - self.lossMean
+            self.lossMean = lossMean2
+            self.lossStd = lossStd2
+            self.lossSamples = []
+            self.display()
+            self.start_timestamp = time.time()
+    def display(self):
+        t = time.time() - self.start_timestamp
+        rate_changed = self.lossVelocity / self.lossMean
+        target_rate_change = 0.1
+        ratio = abs(target_rate_change / rate_changed)
+        seconds = ratio * t
+        steps = ratio * self.lossSamplesToCollect
+        print("-- loss velocity in {} steps: {}".format(self.lossSamplesToCollect, self.lossVelocity))
+        print("----- {} {}% in {} seconds ({} steps)".format('Reduce' if self.lossVelocity<0 else 'Increase',  target_rate_change*100, seconds, steps))
+
+lossTracker = LossTracker()
+
 num_training_rounds = 2
 inputs = inputs.to(device)
 for i in range(1,num_training_rounds):
@@ -85,6 +133,7 @@ for i in range(1,num_training_rounds):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
+    lossTracker.push(loss)
 
 def convertResultToImage(result_array, width, height):
     generated_img = result_array.cpu().detach().numpy().astype('uint8')
@@ -101,3 +150,15 @@ img = convertResultToImage(result_image[0:W*H], W, H)
 img2 = convertResultToImage(result_image[W*H:], W, H)
 showImage(img)
 showImage(img2)
+
+
+# Generate images by using intermediate angles
+start_angle = 0
+end_angle = -np.pi/4
+steps = 3
+angles = torch.linspace(start_angle, end_angle, steps)
+for angle in angles.numpy():
+  input = getInputFromCameraPosition(angle, W, H)
+  result = model(input)
+  img = convertResultToImage(result, W, H)
+  showImage(img)
