@@ -4,6 +4,9 @@ setup:
 test:
 	py.test test.py
 
+display:
+	python display.py $(file_name)
+
 clean:
 	rm -rf __pycache__
 
