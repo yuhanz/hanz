@@ -9,19 +9,22 @@ import numpy as np
 import math
 import time
 
-def get_position_inputs(W, H):
-    xs, ys = torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W))
+def get_position_inputs(W, H, max_freq = 10, N_freqs = 10):
+    frequencies = np.array(list(map(lambda x: 1- 0.65**x, np.arange(0,N_freqs)))) * 2.**max_freq
+    # frequencies = torch.linspace(2.**0., 2.**max_freq, steps=N_freqs)
+    # frequencies[0] = 1.0
+    # frequencies[-1] = 2.**max_freq
+    # frequencies = torch.Tensor(frequencies)
+    # frequencies = torch.stack((frequencies, frequencies))
+    #xs, ys = torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W))
+    xs, ys = torch.meshgrid(torch.linspace(-0.5, 0.5, H), torch.linspace(-0.5, 0.5, W))
+    frequencies_x = torch.Tensor(np.array(list(map(lambda f: f * xs.numpy(), frequencies))))
+    frequencies_y = torch.Tensor(np.array(list(map(lambda f: f * ys.numpy(), frequencies))))
     inputs = torch.stack((torch.flatten(xs), torch.flatten(ys)))
     inputs = torch.transpose(inputs, 0, 1)
-    max_freq = 10
-    N_freqs = 10
-    # frequencies = torch.linspace(2.**0., 2.**max_freq, steps=N_freqs)
-    frequencies = np.array(list(map(lambda x: 1- 0.65**x, np.arange(0,N_freqs)))) * 2.**max_freq
-    frequencies[0] = 1.0
-    frequencies = torch.Tensor(frequencies)
-    frequencies = torch.stack((frequencies, frequencies))
-    frequency_x = torch.matmul(inputs, frequencies)
-    x = torch.cat((inputs, frequency_x), 1)
+    fx = torch.transpose(frequencies_x.flatten(1), 0, 1)
+    fy = torch.transpose(frequencies_y.flatten(1), 0, 1)
+    x = torch.cat((inputs, fx, fy), 1)
     return x
 
 # the scene is at (0,0,0) location. The camera is around the scene.
@@ -116,17 +119,18 @@ class LossTracker:
         rate_changed = self.lossVelocity / self.lossMean
         target_rate_change = 0.1
         ratio = abs(target_rate_change / rate_changed)
-        seconds = ratio * t
-        steps = ratio * self.lossSamplesToCollect
+        seconds = int(ratio * t)
+        steps = int(ratio * self.lossSamplesToCollect)
         print("-- loss velocity in {} steps: {}".format(self.lossSamplesToCollect, self.lossVelocity))
         print("----- {} {}% in {} seconds ({} steps)".format('Reduce' if self.lossVelocity<0 else 'Increase',  target_rate_change*100, seconds, steps))
 
 lossTracker = LossTracker()
 
+pdb.set_trace()
+
 num_training_rounds = 2
 inputs = inputs.to(device)
 for i in range(1,num_training_rounds):
-# pdb.set_trace()
     result_image = model(inputs)
     loss = torch.nn.L1Loss()(result_image.flatten(), target_image )
     print("{}/{} loss".format(i, num_training_rounds), loss)
