@@ -55,28 +55,45 @@ image = Image.open("/Users/yzhang/Downloads/puppy2.png")
 image1 = Image.open("/Users/yzhang/Downloads/puppy1.png")
 W, H = image.size
 
-def rotateCameraAroundOrigin(angle):
+def rotateCameraAroundOrigin(angle, screen_distance = 180):
   camera_distance = -360
-  screen_distance = -180
+  screen_distance = -screen_distance
   cosA = np.cos(angle)
   sinA = np.sin(angle)
   camera_pos = np.array([sinA, 0, cosA]) * camera_distance
   screen_center = np.array([sinA, 0, cosA]) * screen_distance
   return [camera_pos, screen_center]
 
+def convertRayDirToAngles(ray_dir):
+    d = np.linalg.norm(ray_dir[0:2])
+    a1 = math.acos(ray_dir[0] / d) * (0 if ray_dir[1] == 0 else ray_dir[1] / abs(ray_dir[1]))
+    a2 = math.acos(ray_dir[2])
+    return [a1,a2]
 
-def getInputFromCameraPosition(angle, screen_width, screen_height):
+def getInputFromCameraPosition(angle, screen_width, screen_height, view_port_range, num_voxel_samples = 10, screen_distance = 180):
   W = screen_width
   H = screen_height
-  get_position_inputs(W, H)
-  camera_pos, screen_center = rotateCameraAroundOrigin(angle)
+  camera_pos, screen_center = rotateCameraAroundOrigin(angle, screen_distance = 180)
   ray_dirs = torch.Tensor(getViewDirs(camera_pos, screen_center, W, H))
-  ray_origins = torch.Tensor([camera_pos] * (W * H))
+  voxel_points = []
+  i = 0
+  for ray_dir in ray_dirs:
+      i = i +1
+      print('---{}/{}'.format(i, len(ray_dirs)))
+      voxel_points.extend(list(map(lambda r: r * view_port_range + screen_center, [i/10 for i in range(0,10)])))
+  view_angles = list(map(lambda x: convertRayDirToAngles(x), ray_dirs))
+  view_angles = list(map(lambda x: [x]* num_voxel_samples, view_angles))
   x = get_position_inputs(W, H)
-  return torch.cat((x, ray_origins, ray_dirs), 1)
+  x = x.repeat(1, num_voxel_samples).reshape(len(x)*num_voxel_samples, -1)
+  return torch.cat((x, torch.Tensor(voxel_points), torch.Tensor(view_angles).flatten(0,1)), 1)
 
-input0 = getInputFromCameraPosition(0, W, H)  # view angle for image
-input1 = getInputFromCameraPosition(-math.pi/4, W, H) # view angle for image 1
+# sample 3D point along ray (view direction), from near to far.
+def sampleAlongViewDir(view_dir, screen_point, n_samples, view_port_range = 360):
+    return torch.linspace(screen_point, screen_point + view_dir * view_port_range , n_samples)
+
+
+input0 = getInputFromCameraPosition(0, W, H, view_port_range = W)  # view angle for image
+input1 = getInputFromCameraPosition(-math.pi/4, W, H, view_port_range = W) # view angle for image 1
 inputs = torch.cat((input0, input1), 0)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -126,18 +143,26 @@ class LossTracker:
 
 lossTracker = LossTracker()
 
-pdb.set_trace()
-
 num_training_rounds = 2
 inputs = inputs.to(device)
 for i in range(1,num_training_rounds):
-    result_image = model(inputs)
+    voxel_result = model(inputs)
+    result_image = convertVoxelRaysToResult(voxel_result)
     loss = torch.nn.L1Loss()(result_image.flatten(), target_image )
     print("{}/{} loss".format(i, num_training_rounds), loss)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
     lossTracker.push(loss)
+
+# Input: lists of N voxels rgb colors along a ray, each row is a list of colors from near to far
+#       dimension: (N * NUM_SAMPLES, 4)
+# Output: (N, 3) colors
+def convertVoxelRaysToResult(voxels_along_ray, num_samples = 10):
+    rays = voxels_along_ray.reshape(-1, 10, 4)
+    alphas = torch.cumprod(1 - rays[:,:, 3], 1).reshape(-1, 1).repeat(1,3)
+    rgbs = rays[:,:, 0:3].reshape(-1,3)
+    return alphas * rgbs
 
 def convertResultToImage(result_array, width, height):
     generated_img = result_array.cpu().detach().numpy().astype('uint8')
@@ -162,7 +187,7 @@ end_angle = -np.pi/4
 steps = 3
 angles = torch.linspace(start_angle, end_angle, steps)
 for angle in angles.numpy():
-  input = getInputFromCameraPosition(angle, W, H)
+  input = getInputFromCameraPosition(angle, W, H, view_port_range = W)
   result = model(input)
   img = convertResultToImage(result, W, H)
   showImage(img)
