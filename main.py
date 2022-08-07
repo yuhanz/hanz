@@ -2,7 +2,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 import torch
-import hanz
+from torch.utils.data import DataLoader
+import hanz_util
 import sys
 import pdb
 import numpy as np
@@ -18,8 +19,8 @@ def get_position_inputs(W, H, max_freq = 10, N_freqs = 10):
     # frequencies = torch.stack((frequencies, frequencies))
     #xs, ys = torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W))
     xs, ys = torch.meshgrid(torch.linspace(-0.5, 0.5, H), torch.linspace(-0.5, 0.5, W))
-    frequencies_x = torch.Tensor(np.array(list(map(lambda f: f * xs.numpy(), frequencies))))
-    frequencies_y = torch.Tensor(np.array(list(map(lambda f: f * ys.numpy(), frequencies))))
+    frequencies_x = torch.Tensor(np.array(list(map(lambda f: f * xs.numpy(), frequencies))), requires_grad=False)
+    frequencies_y = torch.Tensor(np.array(list(map(lambda f: f * ys.numpy(), frequencies))), requires_grad=False)
     inputs = torch.stack((torch.flatten(xs), torch.flatten(ys)))
     inputs = torch.transpose(inputs, 0, 1)
     fx = torch.transpose(frequencies_x.flatten(1), 0, 1)
@@ -70,31 +71,32 @@ def convertRayDirToAngles(ray_dir):
     a2 = math.acos(ray_dir[2])
     return [a1,a2]
 
-def getInputFromCameraPosition(angle, screen_width, screen_height, view_port_range, num_voxel_samples = 10, screen_distance = 180):
+def getInputFromCameraPosition(angle, screen_width, screen_height, view_port_range, num_voxel_samples = 7, screen_distance = 180):
   W = screen_width
   H = screen_height
   camera_pos, screen_center = rotateCameraAroundOrigin(angle, screen_distance = 180)
-  ray_dirs = torch.Tensor(getViewDirs(camera_pos, screen_center, W, H))
+  ray_dirs = torch.Tensor(getViewDirs(camera_pos, screen_center, W, H), requires_grad = False)
   voxel_points = []
   i = 0
   for ray_dir in ray_dirs:
       i = i +1
       print('---{}/{}'.format(i, len(ray_dirs)))
-      voxel_points.extend(list(map(lambda r: r * view_port_range + screen_center, [i/10 for i in range(0,10)])))
+      voxel_points.extend(list(map(lambda r: r * view_port_range + screen_center, [i/num_voxel_samples for i in range(0,num_voxel_samples)])))
   view_angles = list(map(lambda x: convertRayDirToAngles(x), ray_dirs))
   view_angles = list(map(lambda x: [x]* num_voxel_samples, view_angles))
   x = get_position_inputs(W, H)
   x = x.repeat(1, num_voxel_samples).reshape(len(x)*num_voxel_samples, -1)
-  return torch.cat((x, torch.Tensor(voxel_points), torch.Tensor(view_angles).flatten(0,1)), 1)
+  return torch.cat((x, torch.Tensor(voxel_points, requires_grad = False), torch.Tensor(view_angles, requires_grad = False).flatten(0,1)), 1)
 
 # sample 3D point along ray (view direction), from near to far.
 def sampleAlongViewDir(view_dir, screen_point, n_samples, view_port_range = 360):
     return torch.linspace(screen_point, screen_point + view_dir * view_port_range , n_samples)
 
-
-input0 = getInputFromCameraPosition(0, W, H, view_port_range = W)  # view angle for image
-input1 = getInputFromCameraPosition(-math.pi/4, W, H, view_port_range = W) # view angle for image 1
+num_voxel_samples = 10
+input0 = getInputFromCameraPosition(0, W, H, view_port_range = W, num_voxel_samples = num_voxel_samples)  # view angle for image
+input1 = getInputFromCameraPosition(-math.pi/4, W, H, view_port_range = W, num_voxel_samples = num_voxel_samples) # view angle for image 1
 inputs = torch.cat((input0, input1), 0)
+del input0, input1
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model.to(device)
@@ -106,49 +108,37 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 target_image = torch.Tensor(np.asarray(image).flatten())
 target_image1 = torch.Tensor(np.asarray(image1).flatten())
 target_image = torch.cat((target_image, target_image1), 0).to(device)
+del target_image1
 
 # Decrease learning rate if velocity is slow and std is high
 # Increase learning rate if velocity is slow and std is low
 # Stop if learning negatively
-class LossTracker:
-    lossMean = None
-    lossStd = None
-    lossSamples = []
-    lossSamplesToCollect = 20
-    lossVelocity = 0
-    start_timestamp = None
-    def push(self, loss):
-        self.lossSamples.append(loss.item())
-        if(self.lossMean == None):
-            self.lossMean = self.lossSamples[0]
-            self.start_timestamp = time.time()
-        if len(self.lossSamples) >= self.lossSamplesToCollect:
-            lossMean2 = np.mean(self.lossSamples)
-            lossStd2 = np.std(self.lossSamples)
-            self.lossVelocity = lossMean2 - self.lossMean
-            self.lossMean = lossMean2
-            self.lossStd = lossStd2
-            self.lossSamples = []
-            self.display()
-            self.start_timestamp = time.time()
-    def display(self):
-        t = time.time() - self.start_timestamp
-        rate_changed = self.lossVelocity / self.lossMean
-        target_rate_change = 0.1
-        ratio = abs(target_rate_change / rate_changed)
-        seconds = int(ratio * t)
-        steps = int(ratio * self.lossSamplesToCollect)
-        print("-- loss velocity in {} steps: {}".format(self.lossSamplesToCollect, self.lossVelocity))
-        print("----- {} {}% in {} seconds ({} steps)".format('Reduce' if self.lossVelocity<0 else 'Increase',  target_rate_change*100, seconds, steps))
 
-lossTracker = LossTracker()
+lossTracker = hanz_util.LossTracker()
 
-num_training_rounds = 2
-inputs = inputs.to(device)
+mini_batch_size = 129600
+train_dataloader = DataLoader(inputs, batch_size = mini_batch_size * num_voxel_samples, shuffle = True)
+test_dataloader = DataLoader(target_image, batch_size = mini_batch_size, shuffle = True)
+train_data_iter = iter(train_dataloader)
+test_data_iter = iter(test_dataloader)
+
+num_training_rounds = 10 * 2
 for i in range(1,num_training_rounds):
+    inputs = next(train_data_iter, None)
+    if inputs == None:
+        print("Reloading iterators..")
+        train_data_iter = iter(train_dataloader)
+        test_data_iter = iter(test_dataloader)
+        inputs = next(train_data_iter, None)
+        continue
+
+    inputs = inputs.to(device)
     voxel_result = model(inputs)
-    result_image = convertVoxelRaysToResult(voxel_result)
-    loss = torch.nn.L1Loss()(result_image.flatten(), target_image )
+    del inputs
+    result_image = convertVoxelRaysToResult(voxel_result, num_voxel_samples = num_voxel_samples)
+    del voxel_result
+    target_image = next(test_data_iter).to(device)
+    loss = torch.nn.L1Loss()(result_image.flatten(), target_image)
     print("{}/{} loss".format(i, num_training_rounds), loss)
     optimizer.zero_grad()
     loss.backward()
@@ -156,10 +146,10 @@ for i in range(1,num_training_rounds):
     lossTracker.push(loss)
 
 # Input: lists of N voxels rgb colors along a ray, each row is a list of colors from near to far
-#       dimension: (N * NUM_SAMPLES, 4)
+#       dimension: (N * num_voxel_samples, 4)
 # Output: (N, 3) colors
-def convertVoxelRaysToResult(voxels_along_ray, num_samples = 10):
-    rays = voxels_along_ray.reshape(-1, 10, 4)
+def convertVoxelRaysToResult(voxels_along_ray, num_voxel_samples = 7):
+    rays = voxels_along_ray.reshape(-1, num_voxel_samples, 4)
     alphas = torch.cumprod(1 - rays[:,:, 3], 1).reshape(-1, 1).repeat(1,3)
     rgbs = rays[:,:, 0:3].reshape(-1,3)
     return alphas * rgbs
