@@ -1,5 +1,5 @@
-27
-吕川川 ... 22,27 # input_points - voxel_sample: x,y,z; ray_angle: u,v
+28
+吕川川 ... 22,28 # input_points - voxel_sample: x,y,z; ray_angle: u,v,w
 川吕川 ... 0,2  # input_points - pixel x,y
 川川吕 ... 2,22 # input_points - frequencies
 川川川川

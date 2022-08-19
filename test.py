@@ -49,4 +49,4 @@ def test_pineline_with_one_working_operator_in_row():
     result = m(x)
     num_tests, dim  = result.shape
     assert num_tests == 1
-    assert dim == 3
+    assert dim == 4 
