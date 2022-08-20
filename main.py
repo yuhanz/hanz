@@ -79,13 +79,13 @@ def getInputFromCameraPosition(angle, screen_width, screen_height, view_port_ran
   W = screen_width
   H = screen_height
   camera_pos, screen_center = rotateCameraAroundOrigin(angle, screen_distance = 180)
-  ray_dirs = torch.Tensor(getViewDirs(camera_pos, screen_center, W, H))
+  ray_dirs = getViewDirs(camera_pos, screen_center, W, H)
   voxel_points = []
   i = 0
   for ray_dir in ray_dirs:
       i = i +1
       print('---{}/{}'.format(i, len(ray_dirs)))
-      voxel_points.extend(list(map(lambda r: r * view_port_range + screen_center, [i/num_voxel_samples for i in range(0,num_voxel_samples)])))
+      voxel_points.extend(list(map(lambda r: r * view_port_range * ray_dir + screen_center, [i/num_voxel_samples for i in range(0,num_voxel_samples)])))
   view_angles = list(map(lambda x: convertRayDirToAngles(x), ray_dirs))
   view_angles = list(map(lambda x: [x]* num_voxel_samples, view_angles))
   x = get_position_inputs(W, H)
