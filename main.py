@@ -138,9 +138,16 @@ def showImage(img):
     ax.imshow(img)
     plt.show()
 
-# Decrease learning rate if velocity is slow and std is high
-# Increase learning rate if velocity is slow and std is low
-# Stop if learning negatively
+# Learning rate adjustment guideline
+# strategy 1:
+#   - Decrease learning rate if velocity is slow and std is high
+#   - Increase learning rate if velocity is slow and std is low
+#   - Stop if learning negatively
+# strategy 2:
+#   - looking at the cycles to take for a record minimum loss to happen.
+#   - If it happens every cycle with small reduction, increase the learning rate
+#   - If it happens >= 9 cycles, lower learning rate (*0.95)
+
 
 lossTracker = hanz_util.LossTracker()
 
@@ -150,7 +157,15 @@ test_dataloader = DataLoader(target_image, batch_size = mini_batch_size * 3, shu
 train_data_iter = iter(train_dataloader)
 test_data_iter = iter(test_dataloader)
 
+######      training loop      ######
+
 num_training_rounds = 110 * 10
+
+lossTracker.numOfLearningRateUpdates = 0
+
+# bring the variables having GPU memory to the scope.
+batch_inputs = None
+voxel_result = None
 
 for i in range(1,num_training_rounds+1):
     batch_inputs = next(train_data_iter, None)
@@ -172,12 +187,9 @@ for i in range(1,num_training_rounds+1):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    # lossTracker.push(loss)
+    lossTracker.push(loss)
 
-img = convertResultToImage(result_image[0:W*H], W, H)
-img2 = convertResultToImage(result_image[W*H:], W, H)
-showImage(img)
-showImage(img2)
+######       Display result      #####
 
 def getOutputWithBatch(model, input, mini_batch_size, device, num_voxel_samples):
     input_dataloader = DataLoader(input, batch_size = mini_batch_size * num_voxel_samples, shuffle = False)
