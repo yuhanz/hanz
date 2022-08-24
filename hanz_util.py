@@ -30,10 +30,11 @@ class LossTracker:
                 self.minimumLossMean = self.lossMean
                 print("----- breaking record  minimum in {} cycles".format(self.breakingRecordsInSteps))
                 if self.optimizer != None and self.breakingRecordsInSteps >= 9:
-                  self.optimizer.param_groups[0]['lr'] = optimizer.param_groups[0]['lr'] * 0.95
+                  self.optimizer.param_groups[0]['lr'] = self.optimizer.param_groups[0]['lr'] * 0.95
                   self.numOfLearningRateUpdates = self.numOfLearningRateUpdates + 1
                   if self.numOfLearningRateUpdates > 3:
                     raise Exception("Having too many learning rate updates")
+                  print("------- Reduced learning rate to ", self.optimizer.param_groups[0]['lr'])
                 self.breakingRecordsInSteps = 0
             self.display()
             self.start_timestamp = time.time()

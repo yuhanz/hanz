@@ -29,6 +29,12 @@ def get_position_inputs(W, H, max_freq = 10, N_freqs = 10):
     x = torch.cat((inputs, fx, fy), 1)
     return x
 
+def expandVectorsWithFrequencies(inputs, max_freq = 10, N_freqs = 10):
+    frequencies = np.array(list(map(lambda x: 1- 0.65**x, np.arange(0,N_freqs)))) * 2.**max_freq
+    sin_freq = np.concatenate(list(map(lambda f: np.sin(f * inputs), frequencies)), axis=1)
+    cos_freq = np.concatenate(list(map(lambda f: np.cos(f * inputs), frequencies)), axis=1)
+    return np.concatenate([sin_freq, cos_freq], axis=1)
+
 # the scene is at (0,0,0) location. The camera is around the scene.
 # camera_pos is there the viewer is;
 # screen_center is where the camera is pointing at;
@@ -48,7 +54,7 @@ def getViewDirs(camera_pos, screen_center, width, height):
     return view_dirs
 
 # file_name = sys.argv[1]
-file_name = "./examples/example-nerf-with-view-dir.hanz"
+file_name = "./examples/example-nerf-with-voxel.hanz"
 modules = hanz.parseHanz(file_name)
 
 model = modules[0]
@@ -88,9 +94,10 @@ def getInputFromCameraPosition(angle, screen_width, screen_height, view_port_ran
       voxel_points.extend(list(map(lambda r: r * view_port_range * ray_dir + screen_center, [i/num_voxel_samples for i in range(0,num_voxel_samples)])))
   view_angles = list(map(lambda x: convertRayDirToAngles(x), ray_dirs))
   view_angles = list(map(lambda x: [x]* num_voxel_samples, view_angles))
-  x = get_position_inputs(W, H)
-  x = x.repeat(1, num_voxel_samples).reshape(len(x)*num_voxel_samples, -1)
-  return torch.cat((x, torch.Tensor(voxel_points), torch.Tensor(view_angles).flatten(0,1)), 1)
+  # x = get_position_inputs(W, H)
+  # x = x.repeat(1, num_voxel_samples).reshape(len(x)*num_voxel_samples, -1)
+  voxel_frequency_features = expandVectorsWithFrequencies(voxel_points)
+  return torch.cat((torch.Tensor(voxel_points), torch.Tensor(voxel_frequency_features), torch.Tensor(view_angles).flatten(0,1)), 1)
 
 # sample 3D point along ray (view direction), from near to far.
 def sampleAlongViewDir(view_dir, screen_point, n_samples, view_port_range = 360):
