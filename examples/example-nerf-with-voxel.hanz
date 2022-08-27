@@ -1,8 +1,7 @@
-36
-吕川川 ... 33,36 # input_points - ray_angle: u,v,w
-川吕川 ... 0,3  # input_points - voxel_sample: x,y,z
-川川吕 ... 0,33  # input_points - voxel x,y,z; frequencies
-艹川
+66
+吕川 ... 63,66 # input_points - ray_angle: u,v,w
+川吕 ... 0,63  # input_points - voxel x,y,z; frequencies
+川川川
 川川森 ... 360
 川川厂
 川川森 ... 360
@@ -12,19 +11,18 @@
 川川森 ... 360
 川川厂
 川艹
-川川森 ... 180
-川川厂
-川川森 ... 180
-川川厂
-川川森 ... 180
-川川厂
-川川森 ... 180
-川川厂
-川艹
-川森川 ... 360 # feature linear
+川川
+川川川
 川川森 ... 1 # alpha linear
+川森川 ... 360 # feature linear
 艹川
-森川 ... 180 # view linear
+森川 ... 180 # view linears
 厂川
-森川 ... 3 # rgb
+森川 ... 180 # view linears
+厂川
+森川 ... 180 # view linears
+厂川
+森川 ... 180 # view linears
+厂川
+森川 ... 3 # rgb linear
 艹     # rgba

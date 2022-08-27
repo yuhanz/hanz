@@ -92,6 +92,7 @@ def getInputFromCameraPosition(angle, screen_width, screen_height, view_port_ran
       i = i +1
       print('---{}/{}'.format(i, len(ray_dirs)))
       voxel_points.extend(list(map(lambda r: r * view_port_range * ray_dir + screen_center, [i/num_voxel_samples for i in range(0,num_voxel_samples)])))
+  voxel_points = np.array(voxel_points)
   view_angles = list(map(lambda x: convertRayDirToAngles(x), ray_dirs))
   view_angles = list(map(lambda x: [x]* num_voxel_samples, view_angles))
   # x = get_position_inputs(W, H)
