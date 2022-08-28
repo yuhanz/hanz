@@ -156,8 +156,25 @@ def showImage(img):
 #   - If it happens every cycle with small reduction, increase the learning rate
 #   - If it happens >= 9 cycles, lower learning rate (*0.95)
 
-
 lossTracker = hanz_util.LossTracker()
+
+#### shuffle training data
+
+inputs_array = np.array(inputs)
+
+if isinstance(target_image, torch.Tensor):
+  target_image = target_image.numpy()
+
+inputs2, target_image2 = shuffle(inputs_array.reshape(-1, num_voxel_samples * 66), target_image.reshape(-1, 3))
+
+inputs2 = inputs2.reshape(inputs_array.shape)
+target_image2 = target_image2.reshape(target_image.shape)
+
+inputs = inputs2
+target_image = target_image2
+
+####
+
 
 mini_batch_size = 12960
 train_dataloader = DataLoader(inputs, batch_size = mini_batch_size * num_voxel_samples, shuffle = False)

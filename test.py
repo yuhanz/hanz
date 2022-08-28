@@ -5,6 +5,23 @@ import torch
 def pipelineToString(pipeline):
     return ",".join(map(lambda m: m._get_name(), pipeline))
 
+def test_numberOfParameters():
+    reused = hanz.parseHanzLines("""10
+    森 ... 1
+    川川
+    +
+    """.split("\n"))
+    assert sum([p.shape.numel() for p in reused[0].parameters()]) == 11
+
+    two = hanz.parseHanzLines("""10
+    森川 ... 1
+    川森 ... 1
+    +
+    """.split("\n"))
+    assert sum([p.shape.numel() for p in two[0].parameters()]) == 22
+
+
+
 def test_example():
     modules = hanz.parseHanz('examples/example.hanz')
     assert len(modules) == 1
@@ -49,4 +66,4 @@ def test_pineline_with_one_working_operator_in_row():
     result = m(x)
     num_tests, dim  = result.shape
     assert num_tests == 1
-    assert dim == 4 
+    assert dim == 4

@@ -57,16 +57,7 @@ import random
 def shuffle(trainArray, testArray):
     l1 = len(trainArray)
     l2 = len(testArray)
-    if l2 != l1:
-        max_val = max(l2, l1)
-        min_val = min(l2, l1)
-        assert min_val != 0, "Attempt to shuffle 0 length array"
-        size = max_val / min_val
-        assert size.is_integer(), "arrays cannot be group: size={} vs size={}".format(min_val, max_val)
-        if l1 < l2:
-            testArray = np.array(testArray).reshape(-1, int(size))
-        else:
-            trainArray = np.array(trainArray).reshape(-1, int(size))
+    assert l2 == l1, "arrays cannot be grouped: size={} vs size={}".format(l1, l2)
     arr = list(zip(trainArray, testArray))
     random.shuffle(arr)
     train, test = zip(*arr)
