@@ -42,6 +42,10 @@ class Add(nn.Module):
         return x+ self.model(x)
 
 
+def removeComments(lines):
+  return list(map(lambda line: re.sub(r"#.*", "", line).strip(), lines))
+
+
 def parseLine(line):
   line = re.sub(r"#.*", "", line.strip())
   if(line.strip() == ''):
@@ -73,6 +77,12 @@ def interpretModule(operator, config, dim):
     new_module = nn.ReLU()
   elif operator == '广':
     new_module = nn.LeakyReLU(parseOneFloat(config))
+  elif operator == '广':
+    new_module = nn.LeakyReLU(parseOneFloat(config))
+  elif operator == '中':
+    new_module = nn.InstanceNorm2d(parseOneFloat(config))
+  elif operator == '申':
+    new_module = nn.BatchNorm2d(parseOneFloat(config))
   elif operator == '了':
     new_module = nn.Sigmoid()
   elif operator == '丁':
@@ -88,11 +98,22 @@ def interpretModule(operator, config, dim):
     new_module = Custom(torch.cos, name = 'Cos')
   elif operator == '凶':
     new_module = Custom(torch.abs, name = 'Abs')
+  elif operator == '风':
+    new_module = Custom(torch.sqrt, name = 'Sqrt')
+  elif operator == '一':
+    new_module = nn.Flatten()
+    output_dim = int(parseOneFloat(config))
   elif operator == '吕':
     values = parseInts(config)
     assert len(values) == 2, "Expecting 2 numerical values after 吕"
     new_module = Custom(lambda x: x[:, values[0]:values[1]], name = 'SelectColumns')
     output_dim = values[1] - values[0]
+  elif operator == '田':
+    output_dim = int(parseOneFloat(config))
+    new_module = nn.Conv2d(dim, output_dim, kernel_size=(3,3), stride=1, padding=1, bias=False)
+  elif operator == '井':
+    output_dim = int(parseOneFloat(config))
+    new_module = nn.ConvTranspose2d(dim, output_dim, kernel_size=(2,2), stride=1, padding=1, bias=False)
   elif operator == '目':
     # TODO: parse 3 numerical values
     new_module = Custom(partial(torch.linspace, start, end, steps), no_argument = True, name = 'Linspace')
@@ -107,7 +128,7 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
   m2_list = module_lists.pop(0)
   dim2 = dims.pop(0)
   output_dim = dim
-  if operator == '+':
+  if operator == '+' or operator == '十':
     new_moduleX = CustomCombine(torch.add, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Add')
   elif operator == '艹':
     new_moduleX = CustomCombine(lambda x1, x2: torch.cat((x1, x2), 1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Concat')
@@ -122,6 +143,7 @@ def parseHanz(file_name):
     return parseHanzLines(lines, file_name)
 
 def parseHanzLines(lines, file_name = None):
+    lines = removeComments(lines)
     dim = int(lines[0])
     lines.pop(0)
     module_lists = [[]]

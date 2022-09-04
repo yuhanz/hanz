@@ -1,0 +1,16 @@
+3   # 3 channels(RGB). The input has to be (num_records, channels, width, height)
+田 ... 64 #, (2,2)
+中
+广 ... 0.2
+田 ... 128 #, (2,2)
+中
+广 ... 0.2
+田 ... 256 #, (2,2)
+中
+广 ... 0.2
+田 ... 512 #, (2,2)
+中
+广 ... 0.2
+一 ... 41472 # TODO: flatten output dimension is width * height * dim
+森 ... 1
+#了

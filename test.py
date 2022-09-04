@@ -58,6 +58,35 @@ def test_pineline_with_concatenation():
     assert num_tests == 3
     assert dim == 562
 
+def test_generator():
+    modules = hanz.parseHanz('examples/example-generator.hanz')
+    assert len(modules) == 1
+    m = modules[0]
+    x = torch.ones([2,3,9,9])
+    result = m(x)
+    num_tests, channels, width, height  = result.shape
+    print("num_tests", num_tests)
+    print("channels", channels)
+    print("width", width)
+    print("height", height)
+    assert num_tests == 2
+    assert channels == 3
+    assert width == 6
+    assert height == 6
+
+def test_discriminator():
+    modules = hanz.parseHanz('examples/example-discriminator.hanz')
+    assert len(modules) == 1
+    m = modules[0]
+    x = torch.ones([2,3,9,9])
+    result = m(x)
+    num_tests, dim  = result.shape
+    print("num_tests", num_tests)
+    print("dim", dim)
+    assert num_tests == 2
+    assert dim == 1
+
+
 def test_pineline_with_one_working_operator_in_row():
     modules = hanz.parseHanz('examples/example-nerf-with-view-dir.hanz')
     assert len(modules) == 1
