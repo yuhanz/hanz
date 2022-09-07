@@ -114,9 +114,6 @@ def interpretModule(operator, config, dim):
   elif operator == '井':
     output_dim = int(parseOneFloat(config))
     new_module = nn.ConvTranspose2d(dim, output_dim, kernel_size=(2,2), stride=1, padding=1, bias=False)
-  elif operator == '目':
-    # TODO: parse 3 numerical values
-    new_module = Custom(partial(torch.linspace, start, end, steps), no_argument = True, name = 'Linspace')
   else:
     return (None, output_dim)
   return (new_module, output_dim)
