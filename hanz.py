@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import re
 from functools import partial
+from ast import literal_eval as make_tuple
 # import pdb
 
 class Custom(nn.Module):
@@ -60,11 +61,17 @@ def parseLine(line):
   return [operators, config_list]
 
 def parseOneFloat(config):
+  config = config.split(',',1)[0]
   value_1 = float(re.sub(r"\s", "", config) or "0")
   return value_1
 
 def parseInts(config):
   return list(map(lambda s: int(s.strip()), (re.sub(r"\s", "", config).split(','))))
+
+def parseForNamedParams(config):
+  parts = config.split(",")
+  named_params = dict(list(map(lambda pp: map(lambda ppp: ppp.strip(), pp.split("=",1)), (filter(lambda p: "=" in p, parts)))))
+  return named_params
 
 # Return (module, output_dim)
 def interpretModule(operator, config, dim):
@@ -110,10 +117,20 @@ def interpretModule(operator, config, dim):
     output_dim = values[1] - values[0]
   elif operator == '田':
     output_dim = int(parseOneFloat(config))
-    new_module = nn.Conv2d(dim, output_dim, kernel_size=(3,3), stride=1, padding=1, bias=False)
+    named_params = parseForNamedParams(config)
+    params = dict([[k, make_tuple(v) if k != 'padding_mode' else v] for k,v in named_params.items()])
+    if 'kernel_size' not in params:
+      params['kernel_size'] = (3,3)
+    new_module = nn.Conv2d(dim, output_dim, **params)
+    # new_module = nn.Conv2d(dim, output_dim, kernel_size=(3,3), stride=1, padding=1, bias=False)
   elif operator == '井':
     output_dim = int(parseOneFloat(config))
-    new_module = nn.ConvTranspose2d(dim, output_dim, kernel_size=(2,2), stride=1, padding=1, bias=False)
+    named_params = parseForNamedParams(config)
+    params = dict([[k, make_tuple(v)] for k,v in named_params.items()])
+    if 'kernel_size' not in params:
+      params['kernel_size'] = (2,2)
+    new_module = nn.ConvTranspose2d(dim, output_dim, **params)
+    # new_module = nn.ConvTranspose2d(dim, output_dim, kernel_size=(2,2), stride=1, padding=1, bias=False)
   else:
     return (None, output_dim)
   return (new_module, output_dim)
