@@ -69,7 +69,7 @@ def parseInts(config):
   return list(map(lambda s: int(s.strip()), (re.sub(r"\s", "", config).split(','))))
 
 def parseForNamedParams(config):
-  parts = config.split(",")
+  parts = re.split(r',\s*(?![^()]*\))', config)
   named_params = dict(list(map(lambda pp: map(lambda ppp: ppp.strip(), pp.split("=",1)), (filter(lambda p: "=" in p, parts)))))
   return named_params
 
@@ -119,16 +119,12 @@ def interpretModule(operator, config, dim):
     output_dim = int(parseOneFloat(config))
     named_params = parseForNamedParams(config)
     params = dict([[k, make_tuple(v) if k != 'padding_mode' else v] for k,v in named_params.items()])
-    if 'kernel_size' not in params:
-      params['kernel_size'] = (3,3)
     new_module = nn.Conv2d(dim, output_dim, **params)
     # new_module = nn.Conv2d(dim, output_dim, kernel_size=(3,3), stride=1, padding=1, bias=False)
   elif operator == '井':
     output_dim = int(parseOneFloat(config))
     named_params = parseForNamedParams(config)
     params = dict([[k, make_tuple(v)] for k,v in named_params.items()])
-    if 'kernel_size' not in params:
-      params['kernel_size'] = (2,2)
     new_module = nn.ConvTranspose2d(dim, output_dim, **params)
     # new_module = nn.ConvTranspose2d(dim, output_dim, kernel_size=(2,2), stride=1, padding=1, bias=False)
   else:

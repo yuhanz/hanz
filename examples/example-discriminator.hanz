@@ -1,14 +1,14 @@
 3   # 3 channels(RGB). The input has to be (num_records, channels, width, height)
-田 ... 64, padding = 1, bias=False #, (2,2)
+田 ... 64, kernel_size = (3,3),  padding = 1, bias=False #, (2,2)
 中
 广 ... 0.2
-田 ... 128, padding = 1, bias=False #, (2,2)
+田 ... 128, kernel_size = (3,3),  padding = 1, bias=False #, (2,2)
 中
 广 ... 0.2
-田 ... 256, padding = 1, bias=False #, (2,2)
+田 ... 256, kernel_size = (3,3),  padding = 1, bias=False #, (2,2)
 中
 广 ... 0.2
-田 ... 512, padding = 1, bias=False #, (2,2)
+田 ... 512, kernel_size = (3,3),  padding = 1, bias=False #, (2,2)
 中
 广 ... 0.2
 一 ... 41472 # TODO: flatten output dimension is width * height * dim
