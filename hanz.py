@@ -76,20 +76,20 @@ def parseForNamedParams(config):
 # Return (module, output_dim)
 def interpretModule(operator, config, dim):
   output_dim = dim
+  named_params = parseForNamedParams(config)
+  params = dict([[k, make_tuple(v) if k != 'padding_mode' else v] for k,v in named_params.items()])
   if operator == '森':
     output_dim = int(parseOneFloat(config))
     assert output_dim > 0, "Expecting 1 positive int value after 森"
-    new_module = nn.Linear(dim, output_dim)  # TODO: bias=
+    new_module = nn.Linear(dim, output_dim, **params)
   elif operator == '厂':
-    new_module = nn.ReLU()
+    new_module = nn.ReLU(**params)
   elif operator == '广':
-    new_module = nn.LeakyReLU(parseOneFloat(config))
-  elif operator == '广':
-    new_module = nn.LeakyReLU(parseOneFloat(config))
+    new_module = nn.LeakyReLU(parseOneFloat(config), **params)
   elif operator == '中':
-    new_module = nn.InstanceNorm2d(parseOneFloat(config))
+    new_module = nn.InstanceNorm2d(parseOneFloat(config), **params)
   elif operator == '申':
-    new_module = nn.BatchNorm2d(parseOneFloat(config))
+    new_module = nn.BatchNorm2d(parseOneFloat(config), **params)
   elif operator == '了':
     new_module = nn.Sigmoid()
   elif operator == '丁':
@@ -98,7 +98,7 @@ def interpretModule(operator, config, dim):
     d = int(parseOneFloat(config))
     new_module = nn.Softmax(dim=max(0, d))
   elif operator == '扎':
-    new_module = nn.Softplus()
+    new_module = nn.Softplus(**params)
   elif operator == '弓':
     new_module = Custom(torch.sin, name = 'Sin')
   elif operator == '引':
@@ -108,7 +108,7 @@ def interpretModule(operator, config, dim):
   elif operator == '风':
     new_module = Custom(torch.sqrt, name = 'Sqrt')
   elif operator == '一':
-    new_module = nn.Flatten()
+    new_module = nn.Flatten(**params)
     output_dim = int(parseOneFloat(config))
   elif operator == '吕':
     values = parseInts(config)
@@ -117,16 +117,10 @@ def interpretModule(operator, config, dim):
     output_dim = values[1] - values[0]
   elif operator == '田':
     output_dim = int(parseOneFloat(config))
-    named_params = parseForNamedParams(config)
-    params = dict([[k, make_tuple(v) if k != 'padding_mode' else v] for k,v in named_params.items()])
     new_module = nn.Conv2d(dim, output_dim, **params)
-    # new_module = nn.Conv2d(dim, output_dim, kernel_size=(3,3), stride=1, padding=1, bias=False)
   elif operator == '井':
     output_dim = int(parseOneFloat(config))
-    named_params = parseForNamedParams(config)
-    params = dict([[k, make_tuple(v)] for k,v in named_params.items()])
     new_module = nn.ConvTranspose2d(dim, output_dim, **params)
-    # new_module = nn.ConvTranspose2d(dim, output_dim, kernel_size=(2,2), stride=1, padding=1, bias=False)
   else:
     return (None, output_dim)
   return (new_module, output_dim)
