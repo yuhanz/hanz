@@ -107,6 +107,8 @@ def interpretModule(operator, config, dim):
     new_module = Custom(torch.abs, name = 'Abs')
   elif operator == '风':
     new_module = Custom(torch.sqrt, name = 'Sqrt')
+  elif operator == '正':
+    new_module = Custom(torch.transpose, name = 'Transpose') # TODO
   elif operator == '一':
     new_module = nn.Flatten(**params)
     output_dim = int(parseOneFloat(config))
@@ -137,6 +139,8 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
   elif operator == '艹':
     new_moduleX = CustomCombine(lambda x1, x2: torch.cat((x1, x2), 1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Concat')
     output_dim = dim + dim2
+  elif operator == '昌':
+    new_moduleX = CustomCombine(torch.matmul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'MatMultiply')
   else:
     return [None, output_dim]
   return [[new_moduleX], output_dim]
