@@ -12,10 +12,17 @@ The goal of the Hanz project is to provide a DSL for neural network so that
 - It can be easily edited, copied and pasted
 - Automatically fill in the required intermediate parameters between the layers of neural network.
 
-## How to use
+## How to Install
+
+```
+pip install hanz
+```
+
+## How to Use
 
 ```
 import hanz
+import torch
 modules = hanz.parseHanz('examples/example-generator.hanz')
 model = modules[0]
 x = torch.ones([2,3,9,9])
@@ -23,7 +30,8 @@ result = model(x)
 print(result)
 ```
 
-## To install dependencies
+
+## To install dependencies from this project
 ```
 make setup
 ```
