@@ -127,6 +127,8 @@ In the example below, the result from LeakyReLU (广) pipeline in the next row i
 |风 | Square Root        |
 |一 | Flatten        |
 |吕 | Select Columns        |
+|昌 | Matrix Multiplication |
+|正 | Matrix Transpose	|
 |田 | Convolution        |
 |井 | Convolution Transpose        |
 |+  | Sum of two adjacent columns, and merge into 1 column        |

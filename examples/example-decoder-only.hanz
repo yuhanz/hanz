@@ -1,0 +1,8 @@
+query_vector:20 positional_encoding:10 word_embedding:20
+吕川川 ... 12 24  # input: query_vector
+川吕川 ... ; 0,2  # input: positional encoding
+川川吕 ... ; ; 2,12 # input: word embedding
+川+
+川昌昌 ... ;  # query_vector, key_vector matrix, value_vector matrix
+非川 ... ; # w = dot(key_vector, query_vector)
+昌   ... ; # w * value_vector

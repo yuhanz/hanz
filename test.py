@@ -1,6 +1,8 @@
 import hanz
 import torch.nn as nn
 import torch
+import numpy as np
+import functools
 
 def pipelineToString(pipeline):
     return ",".join(map(lambda m: m._get_name(), pipeline))
@@ -96,3 +98,20 @@ def test_pineline_with_one_working_operator_in_row():
     num_tests, dim  = result.shape
     assert num_tests == 1
     assert dim == 4
+
+def test_multiple_input():
+    modules, functions = hanz.parseHanz('examples/example-multiple-input.hanz')
+    assert len(functions) == 2
+    assert len(modules) == 2
+    f = functions[0]
+    f2 = functions[1]
+    assert type(modules[0]) is torch.nn.modules.container.Sequential
+    assert type(modules[1]) is torch.nn.modules.container.Sequential
+    assert type(f) is functools.partial
+    assert type(f2) is functools.partial
+    assert pipelineToString(modules[0]) == 'SelectColumns,Sin,LeakyReLU,ReLU'
+    assert pipelineToString(modules[1]) == 'SelectColumns,Cos'
+    result = f(embedding = torch.ones(1,5) * 0.5, position = torch.ones(1,2) * 0.5)
+    result2 = f2(embedding = torch.ones(1,5) * 0.5, position = torch.ones(1,2) * 0.5)
+    assert result.tolist() == [[0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411]], 'expecting {} received {}'.format(expected_result, result)
+    assert result2.tolist() == [[0.8775825500488281, 0.8775825500488281]], 'expecting {} received {}'.format(expected_result, result2)

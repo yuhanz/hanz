@@ -3,7 +3,7 @@ import torch
 import re
 from functools import partial
 from ast import literal_eval as make_tuple
-# import pdb
+
 
 class Custom(nn.Module):
     def __init__(self, fn, no_argument = False, name = None):     # Let the fn be a torch function. for example: torch.sin
@@ -42,6 +42,8 @@ class Add(nn.Module):
     def forward(self, x):
         return x+ self.model(x)
 
+def createSelectColumnsFn(start_index, end_index):
+    return lambda x: x[:, start_index:end_index]
 
 def removeComments(lines):
   return list(map(lambda line: re.sub(r"#.*", "", line).strip(), lines))
@@ -115,7 +117,7 @@ def interpretModule(operator, config, dim):
   elif operator == '吕':
     values = parseInts(config)
     assert len(values) == 2, "Expecting 2 numerical values after 吕"
-    new_module = Custom(lambda x: x[:, values[0]:values[1]], name = 'SelectColumns')
+    new_module = Custom(createSelectColumnsFn(values[0], values[1]), name = 'SelectColumns')
     output_dim = values[1] - values[0]
   elif operator == '田':
     output_dim = int(parseOneFloat(config))
@@ -141,6 +143,8 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
     output_dim = dim + dim2
   elif operator == '昌':
     new_moduleX = CustomCombine(torch.matmul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'MatMultiply')
+  elif operator == '非':
+    new_moduleX = CustomCombine(torch.dot, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
   else:
     return [None, output_dim]
   return [[new_moduleX], output_dim]
@@ -152,10 +156,15 @@ def parseHanz(file_name):
 
 def parseHanzLines(lines, file_name = None):
     lines = removeComments(lines)
-    dim = int(lines[0])
+    first_line = lines[0]
     lines.pop(0)
-    module_lists = [[]]
-    dims = [dim]
+    kwargs_hash = parse_kwargs_hash(first_line)
+    if kwargs_hash != {}:
+        module_lists, dims = getSplitLayer(kwargs_hash)
+        print('module_lists', module_lists)
+    else:
+        module_lists = [[]]
+        dims = [int(s) for s in first_line.split()]
 
     line_number = 1
     line_content = None
@@ -167,9 +176,6 @@ def parseHanzLines(lines, file_name = None):
           operators, config_list = parseLine(line)
           if(len(operators) == 0):
             continue
-          # if line_number == 3:
-          #     pdb.set_trace()
-
           new_module_lists = []
           new_dims = []
           z = zip(operators, config_list)
@@ -207,4 +213,46 @@ def parseHanzLines(lines, file_name = None):
       print("Exception happened processing file {} at\n  line #{}: {}\n           {}".format(file_name, line_number, line_content, ex))
       raise ex
 
-    return list(map(moduleListToModuleFn, module_lists))
+    result = list(map(moduleListToModuleFn, module_lists))
+    if kwargs_hash != {}:
+        return (result, [partial(runHanz, module, kwargs_hash) for module in result])
+    return result
+
+##--- methods to support multiple named variables as inputs.
+##    basically they need to be convert in a single vector.
+def runHanz(module, arg_hash, **kwargs):
+    assert arg_hash.keys() == kwargs.keys(), "Expecting parameters: {} but received {}".format(arg_hash.keys(), kwargs.keys())
+    input_vector = wrapNamedArgumentsIntoVector(arg_hash, kwargs)
+    return module(input_vector)
+
+
+# arg_hash:  use Python >= 3.7 to enforce ordering
+def wrapNamedArgumentsIntoVector(arg_hash, kwargs):
+    input_vector = []
+    for key, expected_input_length in arg_hash.items():
+        expected_input_length = int(expected_input_length)
+        v = kwargs[key]
+        input_length = v.shape[1]
+        assert input_length == expected_input_length, 'input \'{}\' requires length = {} but received {}'.format(key, input_length, expected_input_length)
+        input_vector.append(v)
+    return torch.cat(input_vector, 1)
+
+def getSplitLayer(arg_hash):
+    module_list = []
+    dimensions = []
+    start_index = 0
+    for key, expected_input_length in arg_hash.items():
+        expected_input_length = int(expected_input_length)
+        end_index = start_index + expected_input_length
+        new_module = Custom(createSelectColumnsFn(start_index, end_index), name = 'SelectColumns')
+        module_list.append([new_module])
+        dimensions.append(expected_input_length)
+        start_index = end_index
+    return module_list, dimensions
+
+# Convert a line of text input arg_hash
+#       The list of arguments is in the format of {num_dimensions}:{name}
+#       Example: "20:positional_encoding 50:embedding"
+#       Example: "embedding:5 position:2"
+def parse_kwargs_hash(line):
+    return dict(map(lambda x:x.split(':'), filter(lambda p: ':' in p, line.split())))
