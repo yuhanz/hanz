@@ -42,6 +42,14 @@ class Add(nn.Module):
     def forward(self, x):
         return x+ self.model(x)
 
+class TrainableMatrixMultiplication(nn.Module):
+    def __init__(self, dimensions):
+        super().__init__()
+        self.W = nn.Parameter(torch.rand(*dimensions), requires_grad=True)
+    def forward(self, x):
+        return torch.matmul(self.W, x)
+
+
 def createSelectColumnsFn(start_index, end_index):
     return lambda x: x[:, start_index:end_index]
 
@@ -119,6 +127,14 @@ def interpretModule(operator, config, dim):
     assert len(values) == 2, "Expecting 2 numerical values after 吕"
     new_module = Custom(createSelectColumnsFn(values[0], values[1]), name = 'SelectColumns')
     output_dim = values[1] - values[0]
+  elif operator == '昌':
+    matrix_dims = parseInts(config)
+    if len(matrix_dims) >= 2:
+        assert dim == matrix_dims[0], 'Warning: Expecting matrix dimensions to match for multiplication: expecting {}, defined {}'.format(dim, matrix_dims[0])
+        output_dim = matrix_dims[1]
+    else:
+        output_dim = matrix_dims[0]
+    new_module = TrainableMatrixMultiplication([dim, output_dim], **params)
   elif operator == '田':
     output_dim = int(parseOneFloat(config))
     new_module = nn.Conv2d(dim, output_dim, **params)
@@ -141,10 +157,12 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
   elif operator == '艹':
     new_moduleX = CustomCombine(lambda x1, x2: torch.cat((x1, x2), 1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'Concat')
     output_dim = dim + dim2
-  elif operator == '昌':
+  elif operator == '朋':
     new_moduleX = CustomCombine(torch.matmul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'MatMultiply')
   elif operator == '非':
     new_moduleX = CustomCombine(torch.dot, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
+  elif operator == '羽':
+    new_moduleX = CustomCombine(torch.mul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'ElementWiseProduct')
   else:
     return [None, output_dim]
   return [[new_moduleX], output_dim]

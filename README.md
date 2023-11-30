@@ -53,7 +53,7 @@ Use 1 Chinese character as a neural network layer (operator). A neural network i
 A neural network layer (operator) is assigned to a Chinese character whose shape is close to what the operator does. The original meaning of the Chinese character doesn't matter. And it is up to the user to decide its pronunciation.
 
 ### Why Chinese characters (Hanzi)?
-Chinese characters are square characters, made to align well vertically. Traditionally Chinese is also written vertically. So the characters are very natural. Chinese characters meant to be pronunciation agnostic. It is intended to be pronounced as what local dialect wants to pronounce. Many Chinese characters are pictograms. The shape of the character means something. Here I changed its definition so that the shape close to its meaning for neural network domain. For example,
+Chinese characters are square characters, made to align well vertically. Traditionally Chinese is also written vertically. So the characters fit the vertical flow very naturally. Chinese characters meant to be pronunciation agnostic. It is intended to be pronounced as what local dialect wants to pronounce. Many Chinese characters are pictograms. The shape of the character means something. Here I changed its definition so that the shape close to its meaning for neural network domain. For example,
 - 中 means InstanceNormalization, was normalization tries to center data.
 - 田 looks like convolution kernel, and thus means convolution filter
 - 井 is chosen to be convolution transpose, as the shape suggests kernel / image grid.
@@ -127,7 +127,9 @@ In the example below, the result from LeakyReLU (广) pipeline in the next row i
 |风 | Square Root        |
 |一 | Flatten        |
 |吕 | Select Columns        |
-|昌 | Matrix Multiplication |
+|昌 | Matrix Multiplication with a Matrix as learnable parameters|
+|朋 | Matrix Multiplication of two neighboring columns|
+|羽 | Multiplication of two neighboring columns|
 |正 | Matrix Transpose	|
 |田 | Convolution        |
 |井 | Convolution Transpose        |
