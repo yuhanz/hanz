@@ -47,7 +47,7 @@ class TrainableMatrixMultiplication(nn.Module):
         super().__init__()
         self.W = nn.Parameter(torch.rand(*dimensions), requires_grad=True)
     def forward(self, x):
-        return torch.matmul(self.W, x)
+        return torch.matmul(x, self.W)
 
 
 def createSelectColumnsFn(start_index, end_index):

@@ -31,7 +31,7 @@ for (index, current_embedding) in enumerate(embeddings):
 
     if index == 0:
         continue
-    pdb.set_trace()
+    # pdb.set_trace()
 
     result = func(query_vector= torch.Tensor(current_vectors), positional_encoding= torch.Tensor(positional_encodings), word_embedding= torch.Tensor(previous_embeddings))
 
