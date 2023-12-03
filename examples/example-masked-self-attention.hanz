@@ -1,0 +1,6 @@
+query_vector:2 positional_encoding:2 word_embedding:2
+川+       # word_embedding for query, word_vector
+昌昌昌 ... 2 ; 2 ; 2 # query_vector = Mq * query_vector, key_vector = Mk * key_vector matrix, value_vector = Mv * value_vector, word_vector
+非川 ... ; # w = dot(key_vector, query_vector)
+亢川      # softmax
+羽   ... # w * value_vector

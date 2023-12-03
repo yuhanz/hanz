@@ -49,6 +49,14 @@ class TrainableMatrixMultiplication(nn.Module):
     def forward(self, x):
         return torch.matmul(x, self.W)
 
+class SumVertically(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, x):
+        return torch.sum(x, 0)
+    def _get_name(self):
+        return 'SumVertically'
+
 
 def createSelectColumnsFn(start_index, end_index):
     return lambda x: x[:, start_index:end_index]
@@ -119,6 +127,8 @@ def interpretModule(operator, config, dim):
     new_module = Custom(torch.sqrt, name = 'Sqrt')
   elif operator == '正':
     new_module = Custom(torch.transpose, name = 'Transpose') # TODO
+  elif operator == '土':
+    new_module = SumVertically()
   elif operator == '一':
     new_module = nn.Flatten(**params)
     output_dim = int(parseOneFloat(config))
@@ -160,7 +170,7 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
   elif operator == '朋':
     new_moduleX = CustomCombine(torch.matmul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'MatMultiply')
   elif operator == '非':
-    new_moduleX = CustomCombine(torch.dot, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
+    new_moduleX = CustomCombine(lambda x1, x2: (x1 * x2).sum(dim=1).resize(len(x1), 1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
   elif operator == '羽':
     new_moduleX = CustomCombine(torch.mul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'ElementWiseProduct')
   else:
