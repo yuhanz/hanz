@@ -1,0 +1,8 @@
+embedding:5 position:2
+model justSine(position)
+弓
+广 ... 0.2
+厂
+
+model cosineSine(embedding, position)
+引弓

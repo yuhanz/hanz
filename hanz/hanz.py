@@ -193,7 +193,9 @@ def parseHanzLines(lines, file_name = None):
     else:
         module_lists = [[]]
         dims = [int(s) for s in first_line.split()]
+    return _parseHanzLines(lines, file_name, module_lists, dims, kwargs_hash)
 
+def _parseHanzLines(lines, file_name, module_lists, dims, kwargs_hash):
     line_number = 1
     line_content = None
 

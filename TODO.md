@@ -3,6 +3,8 @@
 - Allow two module arrays to compose (use the output of one for the input of another)
 - Allow compose of a chain of module arrays
 - 又 operation to use a module again in the next column
+- 名 name an output
+- start a operation sequence with the variable name as input
 
 # Done
 
