@@ -182,17 +182,57 @@ def parseHanz(file_name):
     lines = f.readlines()
     return parseHanzLines(lines, file_name)
 
+
+
+def parseRoutines(lines, kwargs_hash, file_name):
+    models = []
+    functions = []
+    i = 1
+    num_lines = len(lines)
+    while i < num_lines:
+        while i < num_lines and lines[i].strip() == '':
+            i += 1
+        if i >= num_lines:
+            return (models, functions)
+        assert lines[i].startswith('def '), 'Expecting to model definition at line {}, but encountered {}'.format(i, lines[i])
+        i += 1
+        if i >= num_lines:
+            return (models, functions)
+        variable_names = lines[i].split()
+        dims = []
+        for variable_name in variables_names:
+            assert variable_name in kwargs_hash, 'Line {}: Input name {} is unseen in the parameter of the file. Available input names are {}'.format(i, variable_name, kwargs_hash.keys())
+            dims.append(kwargs_hash[variable_name])
+
+        kwargs_hash_for_function = dict(zip(variable_names, dims))
+        i += 1
+        j = i
+        while j < num_lines and lines[j].strip() != '':
+            j += 1
+        lines_of_subroutine = lines[i:j]
+        subroutine_models, subroutine_functions = _parseHanzLines(lines_of_subroutine, file_name, module_lists, dims, kwargs_hash_for_function)
+        models += subroutine_models
+        functions += subroutine_functions
+    return (models, functions)
+
 def parseHanzLines(lines, file_name = None):
     lines = removeComments(lines)
     first_line = lines[0]
     lines.pop(0)
     kwargs_hash = parse_kwargs_hash(first_line)
     if kwargs_hash != {}:
-        module_lists, dims = getSplitLayer(kwargs_hash)
-        print('module_lists', module_lists)
-    else:
-        module_lists = [[]]
-        dims = [int(s) for s in first_line.split()]
+        next_line = lines[1]
+        is_blank = next_line.strip() == ''
+        is_def = next_line.startswith('def ')
+        if not is_blank and not is_def:
+            module_lists, dims = getSplitLayer(kwargs_hash)
+            print('module_lists', module_lists)
+            return _parseHanzLines(lines, file_name, module_lists, dims, kwargs_hash)
+        return parseRoutines(lines, kwargs_hash, file_name)
+
+
+    module_lists = [[]]
+    dims = [int(s) for s in first_line.split()]
     return _parseHanzLines(lines, file_name, module_lists, dims, kwargs_hash)
 
 def _parseHanzLines(lines, file_name, module_lists, dims, kwargs_hash):
