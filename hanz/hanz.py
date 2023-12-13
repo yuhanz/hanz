@@ -53,9 +53,18 @@ class SumVertically(nn.Module):
     def __init__(self):
         super().__init__()
     def forward(self, x):
-        return torch.sum(x, 0)
+        return torch.sum(x, 0).view(1,-1)
     def _get_name(self):
         return 'SumVertically'
+
+class TakeRow(nn.Module):
+    def __init__(self, row_index):
+        super().__init__()
+        self.row_index = row_index
+    def forward(self, x):
+        return x[self.row_index].view(1,-1)
+    def _get_name(self):
+        return 'TakeRow'
 
 
 def createSelectColumnsFn(start_index, end_index):
@@ -129,6 +138,10 @@ def interpretModule(operator, config, dim):
     new_module = Custom(torch.transpose, name = 'Transpose') # TODO
   elif operator == '土':
     new_module = SumVertically()
+  elif operator == '日':
+    values = parseInts(config)
+    assert len(values) == 1, "Expecting 1 numerical values after 日"
+    new_module = TakeRow(values[0])
   elif operator == '一':
     new_module = nn.Flatten(**params)
     output_dim = int(parseOneFloat(config))
@@ -188,7 +201,11 @@ def parseHanzLines(lines, file_name = None):
     lines.pop(0)
     kwargs_hash = parse_kwargs_hash(first_line)
     if kwargs_hash != {}:
-        module_lists, dims = getSplitLayer(kwargs_hash)
+        ordered_args = []
+        if lines[0].startswith('|'):
+            ordered_args = lines[0].replace(' ', '').strip('|').split('|')
+            lines.pop(0)
+        module_lists, dims = getSplitLayer(kwargs_hash, ordered_args)
         print('module_lists', module_lists)
     else:
         module_lists = [[]]
@@ -265,11 +282,16 @@ def wrapNamedArgumentsIntoVector(arg_hash, kwargs):
         input_vector.append(v)
     return torch.cat(input_vector, 1)
 
-def getSplitLayer(arg_hash):
+def getSplitLayer(arg_hash, ordered_args = None):
     module_list = []
     dimensions = []
     start_index = 0
-    for key, expected_input_length in arg_hash.items():
+    if ordered_args:
+        assert set(ordered_args).issubset(arg_hash.keys()), 'unexpected argument used in the columns. Observed {}; required: {}'.format(ordered_args, arg_hash.keys())
+        items = [(arg, arg_hash[arg]) for arg in ordered_args]
+    else:
+        items = [(key, expected_input_length) for key, expected_input_length in arg_hash.items()]
+    for key, expected_input_length in items:
         expected_input_length = int(expected_input_length)
         end_index = start_index + expected_input_length
         new_module = Custom(createSelectColumnsFn(start_index, end_index), name = 'SelectColumns')

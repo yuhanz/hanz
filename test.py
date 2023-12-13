@@ -115,3 +115,14 @@ def test_multiple_input():
     result2 = f2(embedding = torch.ones(1,5) * 0.5, position = torch.ones(1,2) * 0.5)
     assert result.tolist() == [[0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411]], 'expecting {} received {}'.format(expected_result, result)
     assert result2.tolist() == [[0.8775825500488281, 0.8775825500488281]], 'expecting {} received {}'.format(expected_result, result2)
+
+def test_repeat_columns():
+    modules, functions = hanz.parseHanz('examples/example-decoder.hanz')
+    assert len(functions) == 1
+    assert len(modules) == 1
+    f = functions[0]
+    assert type(modules[0]) is hanz.hanz.CustomCombine
+    assert type(f) is functools.partial
+    assert pipelineToString(nn.Sequential(modules[0])) == 'Add'  # TODO: make this test case better
+    result = f(query_vector = torch.ones(1,2) * 0.5, word_embedding = torch.ones(1,2) * 0.5, positional_encoding = torch.ones(1,2) * 0.5)
+    assert result.tolist() == [[0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411]], 'expecting {} received {}'.format(expected_result, result)

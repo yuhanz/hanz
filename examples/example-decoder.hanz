@@ -1,0 +1,10 @@
+query_vector:2 positional_encoding:2 word_embedding:2
+|query_vector|positional_encoding|word_embedding|query_vector|positional_encoding|
+日日川川川 ... -1 ; -1
++川+       # word_embedding for query, word_vector
+川昌昌昌 ... ; 2 ; 2 ; 2 # query_vector = Mq * query_vector, key_vector = Mk * key_vector matrix, value_vector = Mv * value_vector, word_vector
+川非川 ... # w = dot(key_vector, query_vector)
+川亢川      # softmax
+川羽   ... # w * value_vector
+川土
++
