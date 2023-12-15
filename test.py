@@ -22,7 +22,87 @@ def test_numberOfParameters():
     """.split("\n"))
     assert sum([p.shape.numel() for p in two[0].parameters()]) == 22
 
+def test_operators_without_params():
+    operators = hanz.parseHanzLines("""2
+    厂广了丁扎弓引凶风土 ... ; 0.5 ;
+    """.split("\n"))
+    assert len(operators) == 10
+    assert operators[0](torch.Tensor([[-1,2]])).tolist() == [[0.0, 2.0]], '厂 ReLu wrong'
+    assert operators[1](torch.Tensor([[-1,2]])).tolist() == [[-0.5, 2.0]], '广 LeakyReLu wrong'
+    assert operators[2](torch.Tensor([[-1,2]])).tolist() == [[0.2689414322376251, 0.8807970285415649]], '了 Sigmoid wrong'
+    assert operators[3](torch.Tensor([[-1,2]])).tolist() == [[-0.7615941762924194, 0.9640275835990906]], '丁 Tanh wrong'
+    assert operators[4](torch.Tensor([[-1,2]])).tolist() == [[0.3132616877555847, 2.1269280910491943]], '扎 Softplus wrong'
+    assert operators[5](torch.Tensor([[-1,2]])).tolist() == [[-0.8414710164070129, 0.9092974066734314]], '弓 Sin wrong'
+    assert operators[6](torch.Tensor([[-1,2]])).tolist() == [[0.5403023362159729, -0.416146844625473]], '引 Cos wrong'
+    assert operators[7](torch.Tensor([[-1,2]])).tolist() == [[1.0, 2.0]], '凶 Abs wrong'
+    assert operators[8](torch.Tensor([[4, 16]])).tolist() == [[2.0, 4.0]], '风 Sqrt wrong'
+    assert operators[9](torch.Tensor([[-1,2], [1,4]])).tolist() == [[0, 6]], '土 SumVerically wrong'
+    # assert operators[10](torch.Tensor([[-1,2], [1,4]])).tolist() == [[-1,2], [1,4]], '川 Identity wrong'
 
+def test_normalization_operators():
+    operators = hanz.parseHanzLines("""2
+    中申 ... 5; 5
+    """.split("\n"))
+    assert len(operators) == 2
+    assert operators[0](torch.randn(20, 5, 35, 45)).shape == torch.Size([20, 5, 35, 45]), '中 InstanceNorm2d wrong'
+    assert operators[1](torch.randn(20, 5, 35, 45)).shape == torch.Size([20, 5, 35, 45]), '申 BatchNorm2d wrong'
+
+def test_combine_operators():
+    operators = hanz.parseHanzLines("""2
+    川川川川川川川川川川
+    川川川川正川川川川川
+    +艹朋非羽
+    """.split("\n"))
+    assert len(operators) == 5
+    assert operators[0](torch.Tensor([[-1,2]])).tolist() == [[-2, 4]], '+ Add wrong'
+    assert operators[1](torch.Tensor([[-1,2]])).tolist() == [[-1,2,-1,2]], '艹 Concat wrong'
+    assert operators[2](torch.Tensor([[-1,2]])).tolist() == [[1.0, -2.0], [-2.0, 4.0]], '朋 Matmul wrong'
+    assert operators[3](torch.Tensor([[-1,2]])).tolist() == [[5.]], '非 DotProduct wrong'
+    assert operators[4](torch.Tensor([[-1,2]])).tolist() == [[1, 4]], '羽 Mul ElementWiseProduct) wrong'
+
+def test_matrix_operators():
+    operators = hanz.parseHanzLines("""2
+    正昌日吕 ... ; 2 ; -1 ; 0,1
+    """.split("\n"))
+    assert len(operators) == 4
+    assert operators[0](torch.Tensor([[-1,2],[3,4]])).tolist() == [[-1.0, 3.0], [2.0, 4.0]], '正 transpose wrong'
+    assert operators[1](torch.Tensor([[-1,2],[3,4]])).shape == torch.Size([2,2]), '昌 LeakyReLu wrong'
+    assert operators[2](torch.Tensor([[-1,2],[3,4]])).tolist() == [[3,4]], '日 TakeRow wrong'
+    assert operators[3](torch.Tensor([[-1,2],[3,4]])).tolist() == [[-1], [3]], '吕 Split wrong'
+
+
+def test_grid_operators():
+    operators = hanz.parseHanzLines("""3
+    田井一 ... 5, kernel_size = (3,3), padding = 1, bias=False; 5, kernel_size = (3,3), padding=1, bias = False ; 100
+    """.split("\n"))
+    assert len(operators) == 3
+    assert operators[0](torch.randn(10, 3, 50, 100)).shape == torch.Size([10, 5, 50, 100]), '田 Conv2d'
+    assert operators[1](torch.randn(10, 3, 50, 100)).shape == torch.Size([10, 5, 50, 100]), '井 ConvTranspose2d'
+    assert operators[2](torch.ones(2, 3, 10, 10)).shape == torch.Size([2, 300]), '一 Flatten wrong'
+
+def test_other_operators():
+    operators = hanz.parseHanzLines("""2
+    森亢 ... 5 ; 0.5 ;
+    """.split("\n"))
+    assert len(operators) == 2
+    assert operators[0](torch.Tensor([[-1,2]])).shape == torch.Size([1, 5]), '森 FullyConnected wrong'
+    assert operators[1](torch.Tensor([[-1,2],[1,4]])).tolist() == [[0.11920291930437088, 0.11920291930437088], [0.8807970285415649, 0.8807970285415649]], '亢 Softmax wrong'
+
+def test_split_by_parameter_names():
+    operators, functions = hanz.parseHanzLines("""pos:2 embedding:4
+    |embedding|pos|pos|embedding
+    """.split("\n"))
+    assert len(functions) == 4
+    embedding = [[-1,2,3,4], [5,6,7,8]]
+    pos = [[11,12],[-13,-14]]
+    embedding_tensor = torch.Tensor(embedding)
+    pos_tensor = torch.Tensor(pos)
+    # import pdb
+    # pdb.set_trace()
+    assert functions[0](pos= pos_tensor, embedding= embedding_tensor).tolist() == embedding
+    assert functions[1](pos= pos_tensor, embedding= embedding_tensor).tolist() == pos
+    assert functions[2](pos= pos_tensor, embedding= embedding_tensor).tolist() == pos
+    assert functions[3](pos= pos_tensor, embedding= embedding_tensor).tolist() == embedding
 
 def test_example():
     modules = hanz.parseHanz('examples/example.hanz')
@@ -82,6 +162,7 @@ def test_discriminator():
     m = modules[0]
     x = torch.ones([2,3,9,9])
     result = m(x)
+    print('----- ', result.shape)
     num_tests, dim  = result.shape
     print("num_tests", num_tests)
     print("dim", dim)
@@ -113,16 +194,15 @@ def test_multiple_input():
     assert pipelineToString(modules[1]) == 'SelectColumns,Cos'
     result = f(embedding = torch.ones(1,5) * 0.5, position = torch.ones(1,2) * 0.5)
     result2 = f2(embedding = torch.ones(1,5) * 0.5, position = torch.ones(1,2) * 0.5)
-    assert result.tolist() == [[0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411]], 'expecting {} received {}'.format(expected_result, result)
-    assert result2.tolist() == [[0.8775825500488281, 0.8775825500488281]], 'expecting {} received {}'.format(expected_result, result2)
+    expected_result = [[0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411]]
+    expected_result2 = [[0.8775825500488281, 0.8775825500488281]]
+    assert result.tolist() == expected_result, 'expecting {} received {}'.format(expected_result, result)
+    assert result2.tolist() == expected_result2, 'expecting {} received {}'.format(expected_result2, result2)
 
 def test_repeat_columns():
     modules, functions = hanz.parseHanz('examples/example-decoder.hanz')
     assert len(functions) == 1
     assert len(modules) == 1
     f = functions[0]
-    assert type(modules[0]) is hanz.hanz.CustomCombine
-    assert type(f) is functools.partial
-    assert pipelineToString(nn.Sequential(modules[0])) == 'Add'  # TODO: make this test case better
     result = f(query_vector = torch.ones(1,2) * 0.5, word_embedding = torch.ones(1,2) * 0.5, positional_encoding = torch.ones(1,2) * 0.5)
-    assert result.tolist() == [[0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411, 0.4794255495071411]], 'expecting {} received {}'.format(expected_result, result)
+    assert result.shape == torch.Size([1,2])

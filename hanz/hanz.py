@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import re
 from functools import partial
+from functools import reduce
 from ast import literal_eval as make_tuple
 
 
@@ -66,6 +67,8 @@ class TakeRow(nn.Module):
     def _get_name(self):
         return 'TakeRow'
 
+def matrixTranspose(dim0, dim1, input):
+    return torch.transpose(input, dim0, dim1)
 
 def createSelectColumnsFn(start_index, end_index):
     return lambda x: x[:, start_index:end_index]
@@ -93,6 +96,9 @@ def parseOneFloat(config):
   return value_1
 
 def parseInts(config):
+  config = config.strip()
+  if config == '':
+    return []
   return list(map(lambda s: int(s.strip()), (re.sub(r"\s", "", config).split(','))))
 
 def parseForNamedParams(config):
@@ -114,9 +120,9 @@ def interpretModule(operator, config, dim):
   elif operator == '广':
     new_module = nn.LeakyReLU(parseOneFloat(config), **params)
   elif operator == '中':
-    new_module = nn.InstanceNorm2d(parseOneFloat(config), **params)
+    new_module = nn.InstanceNorm2d(int(parseOneFloat(config)), **params)
   elif operator == '申':
-    new_module = nn.BatchNorm2d(parseOneFloat(config), **params)
+    new_module = nn.BatchNorm2d(int(parseOneFloat(config)), **params)
   elif operator == '了':
     new_module = nn.Sigmoid()
   elif operator == '丁':
@@ -135,7 +141,11 @@ def interpretModule(operator, config, dim):
   elif operator == '风':
     new_module = Custom(torch.sqrt, name = 'Sqrt')
   elif operator == '正':
-    new_module = Custom(torch.transpose, name = 'Transpose') # TODO
+    values = parseInts(config)
+    dim0 = values[0] if len(values) > 0 else 0
+    dim1 = values[1] if len(values) > 1 else 1
+    fn = partial(matrixTranspose, dim0, dim1)
+    new_module = Custom(fn, name = 'Transpose')
   elif operator == '土':
     new_module = SumVertically()
   elif operator == '日':
@@ -143,8 +153,17 @@ def interpretModule(operator, config, dim):
     assert len(values) == 1, "Expecting 1 numerical values after 日"
     new_module = TakeRow(values[0])
   elif operator == '一':
-    new_module = nn.Flatten(**params)
-    output_dim = int(parseOneFloat(config))
+    values = parseInts(config)
+    assert len(values) > 0, "Expecting at least 1 integer as output dimensions"
+    output_dimensions = values[0]
+    if len(values) > 1:
+        dim0 = values[1] if len(values) > 1 else 1
+        dim1 = values[2] if len(values) > 2 else -1
+        fn = nn.Flatten(dim0, dim1)
+    else:
+        fn = nn.Flatten()
+    new_module = Custom(fn, name = 'Flatten')
+    output_dim = output_dimensions
   elif operator == '吕':
     values = parseInts(config)
     assert len(values) == 2, "Expecting 2 numerical values after 吕"
@@ -183,7 +202,9 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
   elif operator == '朋':
     new_moduleX = CustomCombine(torch.matmul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'MatMultiply')
   elif operator == '非':
-    new_moduleX = CustomCombine(lambda x1, x2: (x1 * x2).sum(dim=1).resize(len(x1), 1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
+    # import pdb
+    # pdb.set_trace()
+    new_moduleX = CustomCombine(lambda x1, x2: (x1 * x2).sum(dim=1).view(1,-1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
   elif operator == '羽':
     new_moduleX = CustomCombine(torch.mul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'ElementWiseProduct')
   else:
@@ -206,7 +227,6 @@ def parseHanzLines(lines, file_name = None):
             ordered_args = lines[0].replace(' ', '').strip('|').split('|')
             lines.pop(0)
         module_lists, dims = getSplitLayer(kwargs_hash, ordered_args)
-        print('module_lists', module_lists)
     else:
         module_lists = [[]]
         dims = [int(s) for s in first_line.split()]
@@ -285,19 +305,23 @@ def wrapNamedArgumentsIntoVector(arg_hash, kwargs):
 def getSplitLayer(arg_hash, ordered_args = None):
     module_list = []
     dimensions = []
-    start_index = 0
     if ordered_args:
         assert set(ordered_args).issubset(arg_hash.keys()), 'unexpected argument used in the columns. Observed {}; required: {}'.format(ordered_args, arg_hash.keys())
         items = [(arg, arg_hash[arg]) for arg in ordered_args]
     else:
         items = [(key, expected_input_length) for key, expected_input_length in arg_hash.items()]
-    for key, expected_input_length in items:
-        expected_input_length = int(expected_input_length)
-        end_index = start_index + expected_input_length
+
+    keys = [ (k, int(v)) for (k,v) in arg_hash.items()]
+    values = [ int(v) for (k,v) in arg_hash.items()]
+    cumsum = reduce(lambda s, x: s + [s[-1] + x], values, [0])
+    arg_ranges = dict(zip(arg_hash.keys(), zip(map(lambda v: int(v), arg_hash.values()), cumsum[0:-1], cumsum[1:])))
+    for item in items:
+        key, value = item
+        expected_input_length, start_index, end_index = arg_ranges.get(key)
         new_module = Custom(createSelectColumnsFn(start_index, end_index), name = 'SelectColumns')
         module_list.append([new_module])
         dimensions.append(expected_input_length)
-        start_index = end_index
+
     return module_list, dimensions
 
 # Convert a line of text input arg_hash
