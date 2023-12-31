@@ -188,6 +188,7 @@ def interpretModule(operator, config, dim):
   return (new_module, output_dim)
 
 def moduleListToModuleFn(l):
+  assert l != [], "A pipeline is detected as blank. This usually means its output is identical to the input, and thus should be removed."
   return nn.Sequential(*l) if len(l) >1 else l[0]
 
 def combineModuleLists(operator, module_list, dim, module_lists, dims):

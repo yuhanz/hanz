@@ -8,6 +8,7 @@ def pipelineToString(pipeline):
     return ",".join(map(lambda m: m._get_name(), pipeline))
 
 def test_numberOfParameters():
+    # 1 network reused twice. So there is still 11 parameters
     reused = hanz.parseHanzLines("""10
     森 ... 1
     川川
@@ -15,12 +16,41 @@ def test_numberOfParameters():
     """.split("\n"))
     assert sum([p.shape.numel() for p in reused[0].parameters()]) == 11
 
+    # 2 networks are defined. So there are 11 * 2 parameters
     two = hanz.parseHanzLines("""10
     森川 ... 1
     川森 ... 1
     +
     """.split("\n"))
     assert sum([p.shape.numel() for p in two[0].parameters()]) == 22
+
+def test_operator_to_duplicate_pipelines_with_identity_operator():
+    operators = hanz.parseHanzLines("""3
+    川森 ... ; 2
+    森川 ... 1
+    """.split("\n"))
+    assert operators[0].in_features == 3
+    assert operators[0].out_features == 1
+    assert operators[1].in_features == 3
+    assert operators[1].out_features == 2
+
+    operators = hanz.parseHanzLines("""3
+    森 ... 2
+    森川川 ... 1
+    """.split("\n"))
+    assert len(operators) == 3
+    assert isinstance(operators[0], nn.Sequential)
+    assert isinstance(operators[1], nn.Linear)
+    assert len(operators[0]) == 2
+    assert operators[0][0].in_features == 3
+    assert operators[0][0].out_features == 2
+    assert operators[0][1].in_features == 2
+    assert operators[0][1].out_features == 1
+    assert operators[1].in_features == 3
+    assert operators[1].out_features == 2
+    assert operators[2].in_features == 3
+    assert operators[2].out_features == 2
+
 
 def test_operators_without_params():
     operators = hanz.parseHanzLines("""2
