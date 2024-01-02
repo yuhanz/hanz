@@ -24,7 +24,7 @@ def test_numberOfParameters():
     """.split("\n"))
     assert sum([p.shape.numel() for p in two[0].parameters()]) == 22
 
-def test_operator_to_duplicate_pipelines_with_identity_operator():
+def test_operator_to_fork_pipelines_with_identity_operator_at_the_end():
     operators = hanz.parseHanzLines("""3
     川森 ... ; 2
     森川 ... 1
@@ -51,6 +51,51 @@ def test_operator_to_duplicate_pipelines_with_identity_operator():
     assert operators[2].in_features == 3
     assert operators[2].out_features == 2
 
+
+def test_fork_operator():
+    operators = hanz.parseHanzLines("""3
+    川
+    森又又森 ... 1; ; ; 2
+    """.split("\n"))
+    assert len(operators) == 4
+    assert isinstance(operators[0], nn.Linear)
+    assert isinstance(operators[1], nn.Linear)
+    assert isinstance(operators[2], nn.Linear)
+    assert isinstance(operators[3], nn.Linear)
+    assert operators[0].out_features == 1
+    assert operators[0].in_features == 3
+    assert operators[1].out_features == 1
+    assert operators[1].in_features == 3
+    assert operators[2].out_features == 1
+    assert operators[2].in_features == 3
+    assert operators[3].out_features == 2
+    assert operators[3].in_features == 3
+    assert operators[0] == operators[1]
+    assert operators[0] == operators[2]
+
+    operators = hanz.parseHanzLines("""3
+    弓
+    森又森 ... 1; ; 2
+    """.split("\n"))
+    assert len(operators) == 3
+    assert isinstance(operators[0], nn.Sequential)
+    assert isinstance(operators[1], nn.Sequential)
+    assert isinstance(operators[2], nn.Sequential)
+    assert len(operators[0]) == 2
+    assert len(operators[1]) == 2
+    assert len(operators[2]) == 2
+    assert isinstance(operators[0][1], nn.Linear)
+    assert isinstance(operators[1][1], nn.Linear)
+    assert isinstance(operators[2][1], nn.Linear)
+    assert operators[0][1].out_features == 1
+    assert operators[0][1].in_features == 3
+    assert operators[1][1].out_features == 1
+    assert operators[1][1].in_features == 3
+    assert operators[2][1].out_features == 2
+    assert operators[2][1].in_features == 3
+    assert operators[0][0] == operators[1][0]
+    assert operators[0][1] == operators[1][1]
+    assert pipelineToString(operators[1]) == "Sin,Linear"
 
 def test_operators_without_params():
     operators = hanz.parseHanzLines("""2
@@ -229,7 +274,7 @@ def test_multiple_input():
     assert result.tolist() == expected_result, 'expecting {} received {}'.format(expected_result, result)
     assert result2.tolist() == expected_result2, 'expecting {} received {}'.format(expected_result2, result2)
 
-def test_repeat_columns():
+def test_repeat_input_columns():
     modules, functions = hanz.parseHanz('examples/example-decoder.hanz')
     assert len(functions) == 1
     assert len(modules) == 1

@@ -203,8 +203,6 @@ def combineModuleLists(operator, module_list, dim, module_lists, dims):
   elif operator == '朋':
     new_moduleX = CustomCombine(torch.matmul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'MatMultiply')
   elif operator == '非':
-    # import pdb
-    # pdb.set_trace()
     new_moduleX = CustomCombine(lambda x1, x2: (x1 * x2).sum(dim=1).view(1,-1), nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'DotProduct')
   elif operator == '羽':
     new_moduleX = CustomCombine(torch.mul, nn.Sequential(*module_list), nn.Sequential(*m2_list), name = 'ElementWiseProduct')
@@ -247,23 +245,30 @@ def parseHanzLines(lines, file_name = None):
           z = zip(operators, config_list)
           commands = list(z)
           # for operator, config in zip(operators, config_list):
-          num_commands = len(commands)
+          num_aligned_commands = len(operators) - len(list(filter(lambda c: c == '又', operators)))
           num_modules = len(module_lists)
-          if num_commands > num_modules:
-              for i in range(0, num_commands - num_modules):
+
+          if num_aligned_commands > num_modules:    # duplicate the last module when new pipeline is introduced
+              for i in range(0, num_aligned_commands - num_modules):
                   module_lists.append(module_lists[-1].copy())
                   dims.append(dims[-1])
           for operator, config in commands:
-              m_list = module_lists.pop(0)
-              dim = dims.pop(0)
-              output_dim = dim
-              new_module = None
-              if operator != '川':
+              if operator == '又':
+                assert len(new_module_lists) > 0, "Operator 又 must not be in the first column"
+                output_dim = new_dims[-1]
+                m_list = new_module_lists[-1].copy()
+              else:
+                m_list = module_lists.pop(0)
+                dim = dims.pop(0)
+                output_dim = dim
+                new_module = None
+
+              if operator not in ['川', '又']:
                 new_module, output_dim = interpretModule(operator, config, dim)
 
               if m_list == None:
                 m_list = [new_module]
-              elif operator == '川':
+              elif operator in ['川', '又']:
                 pass
               elif new_module != None:
                 m_list.append(new_module)
