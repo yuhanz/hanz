@@ -81,11 +81,11 @@ Use your favorite template engine to construct a hanz file - Django, Jinja2, Rub
 Here is an example of Resnet repeating 10 times with Ruby ERB:
 ```
 3<% 10.times do %>
-川田 ... 256
-川中 ... 256
+川田 ... ; 256
+川中 ... ; 256
 川厂
-川田 ... 256
-川中 ... 256
+川田 ... ; 256
+川中 ... ; 256
 +<% end %>
 ```
 
@@ -104,35 +104,81 @@ The neural network definition starts from the second line. It assumes the input 
 In the example below, the result from LeakyReLU (广) pipeline in the next row is becoming two pipelines: one identity operator (川), and one applied convolution (田).
 ```
 广 ... 0.2
-川田 ... 256
+川田 ... ; 256
 ```
+
+Note that a semicolon `;` separates parameters for different operator because there are 2 pipelines per row. When multiple parameters exist for the same pipeline, separate them with comma `,`.
+
+It is possible to further configure a torch.nn operator with optional named parameters.
+Here is an example of configuring a `torch.nn.Conv2d` module with detailed optional parameters for convolution kernel_size, padding, bias, etc:
+
+```
+田 ... 64, kernel_size = (3,3),  padding = 1, bias=False
+```
+
 
 ### Operators and Meaning
 
-| Operator    | Description |
-| ----------- | ----------- |
-|森 | Linear (fully connected) layer|
-|厂 | ReLU       |
-|广 | LeakyReLU        |
-|中 | Instance Normalization        |
-|申 | Batch Normalization        |
-|川 | Identity Operator        |
-|了 | Signoid Activation Function      |
-|丁 | Tanh Activation Function        |
-|亢 | Softmax Activation Function        |
-|扎 | Softplus Activation Function        |
-|弓 | Sine Function        |
-|引 | Cosine Function        |
-|凶 | Absolute Value        |
-|风 | Square Root        |
-|一 | Flatten        |
-|吕 | Select Columns        |
-|昌 | Matrix Multiplication with a Matrix as learnable parameters|
-|朋 | Matrix Multiplication of two neighboring columns|
-|羽 | Multiplication of two neighboring columns|
-|正 | Matrix Transpose	|
-|田 | Convolution        |
-|井 | Convolution Transpose        |
-|+  | Sum of two adjacent columns, and merge into 1 column        |
-|十 | Sum of two adjacent columns, and merge into 1 column        |
-|艹 | Concatenation of two adjacent columns, and merge into 1 column        |
+| Operator    | Description  |Number of Input Pipelines | Parameters | Named Parameters (optional) |
+| ----------- | ----------- | ------------------------- | ---------- | ---------------- |
+|森 | Linear (fully connected) layer| 1 | (**output_dimensions** :Int)  | named parameters of torch.nn.Linear
+|厂 | ReLU       | 1 | | named parameters of torch.nn.ReLU
+|广 | LeakyReLU        | 1 | (**threshold** :Float) | named parameters of torch.nn.LeakyReLU
+|中 | Instance Normalization        | 1 | | named parameters of torch.nn.InstanceNorm2d
+|申 | Batch Normalization        | 1 | | named parameters of torch.nn.BatchNorm2d
+|川 | Identity Operator        | 1 | | |
+|又 | Reference Pipeline on the Left, add 1 pipeline (with the same instance) | 0 |
+|了 | Signoid Activation Function      | 1 | |
+|丁 | Tanh Activation Function        | 1 | |
+|亢 | Softmax Activation Function        | 1 | (**dim** :Int)
+|扎 | Softplus Activation Function        | 1 | | named parameters of torch.nn.Softmax
+|弓 | Sine Function        | 1 | |
+|引 | Cosine Function        | 1 | |
+|凶 | Absolute Value        | 1 | |
+|风 | Square Root        | 1 | |
+|一 | Flatten        | 1 | (**output_dimensions** :Int, **dim0** :Int optional, **dim1** :Int optional) |
+|正 | Matrix Transpose	| 1 | (**dim0** :Int, **dim1** :Int)
+|田 | Convolution        | 1 | (**output_dim**: Int) | named parameters of torch.nn.Conv2d
+|井 | Convolution Transpose        | 1 | (**output_dim**: Int) | named parameters of torch.nn.ConvTranspose2d
+|吕 | Select Columns        | 1 | (**start_index** :Int, **end_index** :Int) |
+|昌 | Matrix Multiplication with a Matrix as learnable parameters| 1 | (**output_dimensions** :Int) |
+|朋 | Matrix Multiplication of two neighboring pipelines| 2 | |
+|羽 | Multiplication of two neighboring pipelines | 2 | |
+|非 | Dot Product two neighboring pipelines | 2 | |
+|+  | Sum of two adjacent columns, and merge into 1 column        | 2 | |
+|十 | Sum of two adjacent columns, and merge into 1 column        | 2 | |
+|艹 | Concatenation of two adjacent columns, and merge into 1 column        | 2 | |
+|土 | Sum vertically. Add all rows together to make 1 row | 1 | |
+|日 | Take 1 row and ignore all other rows | 1 |  (**row_index** :Int) |
+
+
+### Multiple Inputs with Named Parameters
+
+It is possible to pass multiple inputs in named parameters as input a Hanz model, and instead of assuming the input as 1 vector, separate the columns by the parameter names.
+
+Here is an example of passing two variables as input: *query_vector* of 2 dimensions, *positional_encoding* of 2 dimensions, and word_embedding of 2 dimensions.
+
+Specify which variables you'd like to each pipeline to start with in the second line. It is possible to let the multiple pipelines to start with the same variables. (If the second did not specify the columns, then the input would become 1 vector as the concatenation of all input variables. In that case, you can use 吕 operator to select columns yourself.)
+
+```
+query_vector:2 positional_encoding:2 word_embedding:2
+|query_vector|positional_encoding|word_embedding|query_vector|positional_encoding|
+日日川川川 ... -1 ; -1
+...
+```
+
+When named parameters are used in the input, the output will include both the operators and the functions that wraps around the operators with the named parameter as input. Use the function to pass multiple parameters to the operator. And the operator is the corresponding the Pytorch model under the function.
+
+For example, construct a model with multiple inputs, along with associated function to call. Take the parameters from the models to train and invoke the models by passing tensors through the named parameters.
+```
+models, functions = hanz.parseHanzLines("""pos:2 embedding:4
+  |embedding|pos|pos|embedding
+  """.split("\n"))
+
+model = models[0]
+func = functions[0]
+optimizer = torch.optim.Adam(list(model.parameters())
+func(pos= pos_tensor, embedding= embedding_tensor)
+```
+
+This example will return 4 models and 4 corresponding functions. To call the model, invoke the function with `func(pos= pos_tensor, embedding= embedding_tensor)`. The model is just the Pytorch model.

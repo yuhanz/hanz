@@ -106,11 +106,14 @@ def parseForNamedParams(config):
   named_params = dict(list(map(lambda pp: map(lambda ppp: ppp.strip(), pp.split("=",1)), (filter(lambda p: "=" in p, parts)))))
   return named_params
 
+
+
 # Return (module, output_dim)
 def interpretModule(operator, config, dim):
   output_dim = dim
   named_params = parseForNamedParams(config)
-  params = dict([[k, make_tuple(v) if k != 'padding_mode' else v] for k,v in named_params.items()])
+  parameter_names_of_string_type = ['padding_mode']
+  params = dict([[k, make_tuple(v) if k not in parameter_names_of_string_type else v] for k,v in named_params.items()])
   if operator == '森':
     output_dim = int(parseOneFloat(config))
     assert output_dim > 0, "Expecting 1 positive int value after 森"
@@ -176,7 +179,7 @@ def interpretModule(operator, config, dim):
         output_dim = matrix_dims[1]
     else:
         output_dim = matrix_dims[0]
-    new_module = TrainableMatrixMultiplication([dim, output_dim], **params)
+    new_module = TrainableMatrixMultiplication([dim, output_dim])
   elif operator == '田':
     output_dim = int(parseOneFloat(config))
     new_module = nn.Conv2d(dim, output_dim, **params)
