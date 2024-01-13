@@ -154,9 +154,9 @@ Here is an example of configuring a `torch.nn.Conv2d` module with detailed optio
 
 ### Multiple Inputs with Named Parameters
 
-It is possible to pass multiple inputs in named parameters as input a Hanz model, and instead of assuming the input as 1 vector, separate the columns by the parameter names.
+It is possible to pass multiple inputs in named parameters as input of a Hanz model, and instead of assuming the input as 1 vector, separate the columns by the parameter names.
 
-Here is an example of passing two variables as input: *query_vector* of 2 dimensions, *positional_encoding* of 2 dimensions, and word_embedding of 2 dimensions.
+Here is an example of passing three variables as input: *query_vector* of 2 dimensions, *positional_encoding* of 2 dimensions, and word_embedding of 2 dimensions.
 
 Specify which variables you'd like to each pipeline to start with in the second line. It is possible to let the multiple pipelines to start with the same variables. (If the second did not specify the columns, then the input would become 1 vector as the concatenation of all input variables. In that case, you can use 吕 operator to select columns yourself.)
 
@@ -164,12 +164,11 @@ Specify which variables you'd like to each pipeline to start with in the second 
 query_vector:2 positional_encoding:2 word_embedding:2
 |query_vector|positional_encoding|word_embedding|query_vector|positional_encoding|
 日日川川川 ... -1 ; -1
-...
 ```
 
-When named parameters are used in the input, the output will include both the operators and the functions that wraps around the operators with the named parameter as input. Use the function to pass multiple parameters to the operator. And the operator is the corresponding the Pytorch model under the function.
+When named parameters are used in the input, the output will include both the models and the functions that wraps around the models with the named parameter as input. Use the function to pass multiple parameters to the model.
 
-For example, construct a model with multiple inputs, along with associated function to call. Take the parameters from the models to train and invoke the models by passing tensors through the named parameters.
+For example, construct a model with multiple inputs, along with associated function to call. Take the parameters from the model to train and invoke the model by passing tensors through the named parameters.
 ```
 models, functions = hanz.parseHanzLines("""pos:2 embedding:4
   |embedding|pos|pos|embedding
@@ -181,4 +180,4 @@ optimizer = torch.optim.Adam(list(model.parameters())
 func(pos= pos_tensor, embedding= embedding_tensor)
 ```
 
-This example will return 4 models and 4 corresponding functions. To call the model, invoke the function with `func(pos= pos_tensor, embedding= embedding_tensor)`. The model is just the Pytorch model.
+This example will return 4 models and 4 corresponding functions. To call the model, invoke the function with `func(pos= pos_tensor, embedding= embedding_tensor)`. The model is just a Pytorch model. So nothing stops you from calling the model directly with 1 vector as input.
