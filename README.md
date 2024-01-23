@@ -124,8 +124,8 @@ Here is an example of configuring a `torch.nn.Conv2d` module with detailed optio
 |森 | Linear (fully connected) layer| 1 | (**output_dimensions** :Int)  | named parameters of torch.nn.Linear
 |厂 | ReLU       | 1 | | named parameters of torch.nn.ReLU
 |广 | LeakyReLU        | 1 | (**threshold** :Float) | named parameters of torch.nn.LeakyReLU
-|中 | Instance Normalization        | 1 | | named parameters of torch.nn.InstanceNorm2d
-|申 | Batch Normalization        | 1 | | named parameters of torch.nn.BatchNorm2d
+|中 | Instance Normalization        | 1 | (**num_features** :Int) | named parameters of torch.nn.InstanceNorm2d
+|申 | Batch Normalization        | 1 | (**num_features** :Int) | named parameters of torch.nn.BatchNorm2d
 |川 | Identity Operator        | 1 | | |
 |又 | Reference Pipeline on the Left, add 1 pipeline (with the same instance) | 0 |
 |了 | Signoid Activation Function      | 1 | |
@@ -138,8 +138,9 @@ Here is an example of configuring a `torch.nn.Conv2d` module with detailed optio
 |风 | Square Root        | 1 | |
 |一 | Flatten        | 1 | (**output_dimensions** :Int, **dim0** :Int optional, **dim1** :Int optional) |
 |正 | Matrix Transpose	| 1 | (**dim0** :Int, **dim1** :Int)
-|田 | Convolution        | 1 | (**output_dim**: Int) | named parameters of torch.nn.Conv2d
-|井 | Convolution Transpose        | 1 | (**output_dim**: Int) | named parameters of torch.nn.ConvTranspose2d
+|田 | Convolution        | 1 | (**output_dim** :Int) | named parameters of torch.nn.Conv2d
+|井 | Convolution Transpose        | 1 | (**output_dim** :Int) | named parameters of torch.nn.ConvTranspose2d
+|回 | MaxPool2D        | 1 | (**kernel_size** :tuple) | named parameters of torch.nn.MaxPool2D
 |吕 | Select Columns        | 1 | (**start_index** :Int, **end_index** :Int) |
 |昌 | Matrix Multiplication with a Matrix as learnable parameters| 1 | (**output_dimensions** :Int) |
 |朋 | Matrix Multiplication of two neighboring pipelines| 2 | |

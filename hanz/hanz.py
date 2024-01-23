@@ -30,6 +30,8 @@ class CustomCombine(nn.Module):
     def forward(self, x):
         r1 = self.fn1(x)
         r2 = self.fn2(x)
+        # import pdb
+        # pdb.set_trace()
         r = self.fn(r1, r2)
         return r
     def _get_name(self):
@@ -186,6 +188,10 @@ def interpretModule(operator, config, dim):
   elif operator == '井':
     output_dim = int(parseOneFloat(config))
     new_module = nn.ConvTranspose2d(dim, output_dim, **params)
+  elif operator == '回':
+    # kernel_size = make_tuple(config)
+    # output_dim = int(parseOneFloat(config))  # TODO: calculate output dim.
+    new_module = nn.MaxPool2d(**params)
   else:
     return (None, output_dim)
   return (new_module, output_dim)

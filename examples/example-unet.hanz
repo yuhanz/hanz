@@ -1,0 +1,60 @@
+3   # 3 RGB channels. The input has to be (num_records, channels, width, height)
+田 ... 64, kernel_size = (3,3), padding=1
+申 ... 64
+厂
+田 ... 64, kernel_size = (3,3), padding=1
+申 ... 64
+厂
+回又 ... kernel_size = (2,2)
+田川 ... 128, kernel_size = (3,3), padding=1
+申川 ... 128
+厂川
+田川 ... 128, kernel_size = (3,3), padding=1
+申川 ... 128
+厂川
+回又川 ... kernel_size = (2,2)
+田川川 ... 256, kernel_size = (3,3), padding=1
+申川川 ... 256
+厂川川
+田川川 ... 256, kernel_size = (3,3), padding=1
+申川川 ... 256
+厂川川
+回又川川 ... kernel_size = (2,2)
+田川川川 ... 512, kernel_size = (3,3), padding=1
+申川川川 ... 512
+厂川川川
+田川川川 ... 512, kernel_size = (3,3), padding=1
+申川川川 ... 512
+厂川川川
+回又川川川 ... kernel_size = (2,2)
+田川川川川 ... 1024, kernel_size = (3,3), padding=1
+申川川川川 ... 1024
+厂川川川川
+田川川川川 ... 1024, kernel_size = (3,3), padding=1
+申川川川川 ... 1024
+厂川川川川
+回川川川川 ... kernel_size = (2,2)
+井川川川川 ... 512, kernel_size= (2,2), stride=2, padding=0
+艹川川川
+田川川川 ... 1024, kernel_size = (3,3), padding=1
+申川川川 ... 1024
+厂川川川
+井川川川 ... 256, kernel_size= (2,2), stride=2, padding=0
+艹川川
+田川川 ... 512, kernel_size = (3,3), padding=1
+申川川 ... 512
+厂川川
+井川川 ... 128, kernel_size = (2,2), stride=2, padding=0
+艹川
+田川 ... 256, kernel_size = (3,3), padding=1
+申川 ... 256
+厂川
+井川 ... 64, kernel_size = (2,2), stride=2, padding=0
+艹
+田 ... 128, kernel_size = (3,3), padding=1
+申 ... 128
+厂
+田 ... 64, kernel_size = (3,3), padding=1
+申 ... 64
+厂
+田 ... 1, kernel_size = (1,1), padding=0

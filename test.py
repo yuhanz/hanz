@@ -281,3 +281,12 @@ def test_repeat_input_columns():
     f = functions[0]
     result = f(query_vector = torch.ones(1,2) * 0.5, word_embedding = torch.ones(1,2) * 0.5, positional_encoding = torch.ones(1,2) * 0.5)
     assert result.shape == torch.Size([1,2])
+
+def test_unet():
+    # As described in https://medium.com/analytics-vidhya/unet-implementation-in-pytorch-idiot-developer-da40d955f201
+    modules = hanz.parseHanz('examples/example-unet.hanz')
+    assert len(modules) == 1
+    m = modules[0]
+    x = torch.rand(10, 3, 640, 480)
+    result = m(x)
+    assert result.shape == torch.Size([10,1,320,240])
