@@ -142,7 +142,7 @@ Here is an example of configuring a `torch.nn.Conv2d` module with detailed optio
 |井 | Convolution Transpose        | 1 | (**output_dim** :Int) | named parameters of torch.nn.ConvTranspose2d
 |回 | MaxPool2D        | 1 | (**kernel_size** :tuple) | named parameters of torch.nn.MaxPool2D
 |吕 | Select Columns        | 1 | (**start_index** :Int, **end_index** :Int) |
-|昌 | Matrix Multiplication with a Matrix as learnable parameters| 1 | (**output_dimensions** :Int) |
+|~~昌~~ | ~~Matrix Multiplication with a Matrix as learnable parameters~~ | 1 | (**output_dimensions** :Int) | (Deprecated. Use Linear layer 森)
 |朋 | Matrix Multiplication of two neighboring pipelines| 2 | |
 |羽 | Multiplication of two neighboring pipelines | 2 | |
 |非 | Dot Product two neighboring pipelines | 2 | |
